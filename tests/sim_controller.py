@@ -1,6 +1,7 @@
 import asyncio, sys, tempfile, logging
 from types import SimpleNamespace
-sys.path.insert(0, r"C:\AI\hekken-planner")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from homeassistant.core import HomeAssistant
 from custom_components.hekken.controller import GateController
 
