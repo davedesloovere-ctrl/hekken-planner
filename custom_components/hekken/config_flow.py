@@ -34,6 +34,9 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_NOTIFY,
+    CONF_OBSTACLE_ENTITIES,
+    CONF_OBSTACLE_HOLD,
+    CONF_OBSTACLE_STOP,
     CONF_PRESENCE,
     CONF_RELAY,
     CONF_RELAY_TYPE,
@@ -49,6 +52,7 @@ from .const import (
     CONF_UNIFI_TOKEN,
     CONF_UNIFI_VERIFY_SSL,
     DAYS,
+    DEFAULT_OBSTACLE_HOLD,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
@@ -152,6 +156,13 @@ def _gate_schema(d: dict[str, Any], with_relay: bool, with_name: bool) -> vol.Sc
                 EntitySelectorConfig(domain=PRESENCE_DOMAINS, multiple=True)
             ),
             vol.Optional(CONF_NOTIFY, description={"suggested_value": d.get(CONF_NOTIFY)}): TextSelector(),
+            vol.Optional(CONF_OBSTACLE_ENTITIES, description={"suggested_value": d.get(CONF_OBSTACLE_ENTITIES)}): EntitySelector(
+                EntitySelectorConfig(domain="binary_sensor", multiple=True)
+            ),
+            vol.Required(CONF_OBSTACLE_HOLD, default=d.get(CONF_OBSTACLE_HOLD, DEFAULT_OBSTACLE_HOLD)): NumberSelector(
+                NumberSelectorConfig(min=10, max=600, step=5, unit_of_measurement="s", mode=NumberSelectorMode.BOX)
+            ),
+            vol.Required(CONF_OBSTACLE_STOP, default=d.get(CONF_OBSTACLE_STOP, False)): BooleanSelector(),
         }
     )
     return vol.Schema(fields)
@@ -165,6 +176,8 @@ def _clean_settings(user_input: dict[str, Any]) -> dict[str, Any]:
     out[CONF_TRAVEL_TIME] = int(user_input[CONF_TRAVEL_TIME])
     out[CONF_RETRIES] = int(user_input[CONF_RETRIES])
     out[CONF_RETRY_DELAY] = float(user_input[CONF_RETRY_DELAY])
+    out[CONF_OBSTACLE_ENTITIES] = user_input.get(CONF_OBSTACLE_ENTITIES, [])
+    out[CONF_OBSTACLE_HOLD] = int(user_input.get(CONF_OBSTACLE_HOLD, DEFAULT_OBSTACLE_HOLD))
     return out
 
 

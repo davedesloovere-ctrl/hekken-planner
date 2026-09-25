@@ -41,7 +41,10 @@
           "retries": "Extra pogingen",
           "presence_entities": "Wie telt als thuis",
           "notify_service": "Melding bij problemen",
-          "retry_delay": "Tijd tot volgende poging"
+          "retry_delay": "Tijd tot volgende poging",
+          "obstacle_entities": "Obstakelsensoren (camera)",
+          "obstacle_hold": "Zone bezet na beweging",
+          "obstacle_stop": "Stoppuls bij beweging tijdens het sluiten"
         },
         "data_description": {
           "relay_entity": "De knop, schakelaar, slot of script van UniFi Access die het hekken laat bewegen.",
@@ -51,7 +54,10 @@
           "retries": "Hoe vaak opnieuw pulsen voor het hekken in storing gaat. 1 betekent: één puls, na de wachttijd nog één, en dan storing.",
           "presence_entities": "Personen, gsm's of de zone Thuis. Is er één thuis, dan slaan regels met 'niet als iemand thuis is' het sluiten over.",
           "notify_service": "Optioneel, bv. notify.mobile_app_gsm_dave. Leeg laten voor enkel een melding in Home Assistant.",
-          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset."
+          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset.",
+          "obstacle_entities": "Optioneel: sensoren die aan gaan bij beweging in de zone van de poort, bv. 'Person detected' uit UniFi Protect. Het webhook-adres voor een Protect-alarm vind je op de Hekken-pagina.",
+          "obstacle_hold": "Zo lang na de laatste beweging telt de zone nog als bezet. Pas daarna sluit de poort.",
+          "obstacle_stop": "Stuurt één puls om de poort te stoppen en zet de planner in storing. Enkel aanzetten als je motor bij een puls tijdens het sluiten stopt, niet omkeert."
         }
       }
     },
@@ -121,12 +127,18 @@
           "retries": "Extra pogingen",
           "presence_entities": "Wie telt als thuis",
           "notify_service": "Melding bij problemen",
-          "retry_delay": "Tijd tot volgende poging"
+          "retry_delay": "Tijd tot volgende poging",
+          "obstacle_entities": "Obstakelsensoren (camera)",
+          "obstacle_hold": "Zone bezet na beweging",
+          "obstacle_stop": "Stoppuls bij beweging tijdens het sluiten"
         },
         "data_description": {
           "travel_time": "Hoe lang het hekken nodig heeft om volledig open of dicht te gaan. Binnen deze tijd stuurt de planner geen nieuwe puls, anders stopt of keert het hekken.",
           "retries": "Hoe vaak opnieuw pulsen voor het hekken in storing gaat. 1 betekent: één puls, na de wachttijd nog één, en dan storing.",
-          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset."
+          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset.",
+          "obstacle_entities": "Optioneel: sensoren die aan gaan bij beweging in de zone van de poort, bv. 'Person detected' uit UniFi Protect. Het webhook-adres voor een Protect-alarm vind je op de Hekken-pagina.",
+          "obstacle_hold": "Zo lang na de laatste beweging telt de zone nog als bezet. Pas daarna sluit de poort.",
+          "obstacle_stop": "Stuurt één puls om de poort te stoppen en zet de planner in storing. Enkel aanzetten als je motor bij een puls tijdens het sluiten stopt, niet omkeert."
         }
       },
       "unifi": {
@@ -201,6 +213,9 @@
     "binary_sensor": {
       "fault": {
         "name": "Storing"
+      },
+      "obstacle": {
+        "name": "Obstakel"
       }
     },
     "button": {

@@ -36,6 +36,27 @@ Voorbeeld: *werkdagen 08:00-17:00, sluit na 15 minuten, niet als iemand thuis is
 Gaat het hekken om 10:00 open voor de postbode, dan sluit het om 10:15. Ben je thuis,
 dan blijft het open. Vertrek je om 11:00 en staat het nog open, dan sluit het om 11:15.
 
+## Veiligheid zonder fotocel: je camera
+
+Heb je geen fotocel of oog, laat dan je camera meekijken. Bij beweging in de zone van de
+poort sluit de planner niet: automatisch sluiten schuift op, en ook een regel of een druk op
+Sluiten wacht tot de zone een instelbare tijd vrij is (standaard 60 seconden).
+
+**UniFi Protect:** maak in Protect een alarm (Alarm Manager):
+
+- **Trigger:** *Objects* met Person en Vehicle (en Animal als je een hond hebt). Kies niet
+  *Activity → Motion*: dat reageert ook op de poortvleugels zelf, waardoor de poort nooit sluit.
+- **Scope:** *Include* en vink de zone van de poort aan.
+- **Action:** *Webhook → Custom Webhook*, en plak het adres van de Hekken-pagina
+  (Instellingen → Veiligheid) bij *Delivery URL*. GET of POST werkt allebei.
+- Laat *Ignore Repeated Actions* uit.
+
+Je kan ook bestaande sensoren kiezen, bv. *Person detected* uit de UniFi Protect-integratie.
+
+Beweegt er iets terwijl de poort al aan het sluiten is, dan krijg je een melding. Optioneel
+stuurt de planner dan één puls om te stoppen en gaat hij in storing. Zet dat enkel aan als
+je motor bij een puls tijdens het sluiten stopt en niet omkeert.
+
 ## Installeren
 
 **Via HACS (aanrader):** HACS → drie puntjes → *Aangepaste repositories* → deze repo als

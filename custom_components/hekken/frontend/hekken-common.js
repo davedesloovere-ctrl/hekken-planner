@@ -45,6 +45,13 @@ export const STR = {
     d_mon: "Ma", d_tue: "Di", d_wed: "Wo", d_thu: "Do", d_fri: "Vr", d_sat: "Za", d_sun: "Zo",
     sum_auto: "sluit na {m} min", sum_home: "niet als iemand thuis is", sum_start_open: "open bij begin", sum_start_close: "dicht bij begin", sum_end_open: "open bij einde", sum_end_close: "dicht bij einde",
     now: "nu",
+    obstacle: "Beweging in de zone", obstacle_wait: "Wacht met sluiten: beweging in de zone",
+    safety: "Veiligheid (camera)", safety_d: "Zonder fotocel kijkt de planner naar je camera: bij beweging in de zone van de poort wordt er niet gesloten tot de zone vrij is.",
+    webhook: "Webhook-adres voor UniFi Protect", webhook_d: "Maak in Protect een alarm: Objects (persoon, voertuig), Scope 'Include' met de zone van de poort, actie Webhook → Custom Webhook, en plak dit adres bij Delivery URL.",
+    copy: "Kopiëren", copied: "Gekopieerd",
+    obstacle_entities: "Of: sensoren die beweging melden", obstacle_hold: "Zone bezet na beweging", obstacle_hold_d: "Zo lang na de laatste beweging wacht de poort nog met sluiten.",
+    obstacle_stop: "Stoppuls bij beweging tijdens het sluiten", obstacle_stop_d: "Stuurt één puls om te stoppen en zet de planner in storing. Enkel aanzetten als je motor dan stopt en niet omkeert.",
+    no_obstacle_entities: "Geen bewegingssensoren gevonden.",
     pos_open: "Poort staat open", pos_closed: "Poort staat dicht", pos_unknown: "Stand onbekend",
     today: "Vandaag", card_today: "Tijdlijn van vandaag tonen", card_last: "Laatste actie tonen",
     gate: "Poort", card_name: "Naam op de kaart", card_chips: "Chips tonen (automatisch, thuis, regel)",
@@ -90,6 +97,13 @@ export const STR = {
     d_mon: "Mo", d_tue: "Tu", d_wed: "We", d_thu: "Th", d_fri: "Fr", d_sat: "Sa", d_sun: "Su",
     sum_auto: "closes after {m} min", sum_home: "not when someone is home", sum_start_open: "opens at start", sum_start_close: "closes at start", sum_end_open: "opens at end", sum_end_close: "closes at end",
     now: "now",
+    obstacle: "Motion in the zone", obstacle_wait: "Waiting to close: motion in the zone",
+    safety: "Safety (camera)", safety_d: "Without a photocell the planner watches your camera: when something moves in the gate zone, it will not close until the zone is clear.",
+    webhook: "Webhook address for UniFi Protect", webhook_d: "Create an alarm in Protect: Objects (person, vehicle), Scope 'Include' with the gate zone, action Webhook → Custom Webhook, and paste this address as Delivery URL.",
+    copy: "Copy", copied: "Copied",
+    obstacle_entities: "Or: sensors that report motion", obstacle_hold: "Zone busy after motion", obstacle_hold_d: "How long after the last motion the gate still waits to close.",
+    obstacle_stop: "Stop pulse on motion while closing", obstacle_stop_d: "Sends one pulse to stop and puts the planner in fault. Only enable if your motor stops rather than reverses.",
+    no_obstacle_entities: "No motion sensors found.",
     pos_open: "Gate is open", pos_closed: "Gate is closed", pos_unknown: "Position unknown",
     today: "Today", card_today: "Show today's timeline", card_last: "Show last action",
     gate: "Gate", card_name: "Name on the card", card_chips: "Show chips (automatic, home, rule)",
@@ -111,6 +125,7 @@ export const ICON = {
   down: "M7 10l5 5 5-5z",
   alert: "M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z",
   home: "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z",
+  motion: "M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7",
   away: "M12 7c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-2 3l-3 11h2l2-6 2 2v4h2v-5l-2-2 1-3c1 1.3 2.4 2 4 2v-2c-1.3 0-2.4-.7-3-1.7l-1-1.6c-.4-.6-1-.9-1.7-.9-.3 0-.5.1-.8.2L6 8.3V13h2V9.6l2-.6",
   clock: "M12 2a10 10 0 100 20 10 10 0 000-20zm1 11h-5v-2h3V6h2v7z",
   edit: "M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25zM20.7 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
@@ -232,6 +247,8 @@ button.chip { cursor: pointer; font: inherit; font-size: 13px; }
 .chip svg { width: 16px; height: 16px; fill: currentColor; opacity: .8; }
 .chip.on { background: color-mix(in srgb, var(--hk-accent) 16%, transparent); color: var(--hk-accent); }
 .chip.off { color: var(--hk-muted); }
+.chip.warn { background: color-mix(in srgb, var(--hk-bad) 14%, transparent); color: var(--hk-bad); animation: hkpulse 1.6s ease-in-out infinite; }
+@keyframes hkpulse { 50% { background: color-mix(in srgb, var(--hk-bad) 26%, transparent); } }
 
 /* fault */
 .fault {
@@ -274,6 +291,7 @@ export function gateView(hass, entry) {
   const closeAt = at && !["unknown", "unavailable"].includes(at) ? new Date(at) : null;
   return {
     state, pos, inFault, fault,
+    obstacle: st(entry.entities.obstacle)?.state === "on",
     autoOn: st(entry.entities.automatic)?.state === "on",
     home, hasPresence: entry.settings.presence_entities.length > 0,
     active, hasActive: !!active && !["Geen", "unknown", "unavailable"].includes(active),
@@ -290,6 +308,7 @@ export function countdown(closeAt) {
 // Tekst onder de status: aftellen, of bij een storing de echte stand.
 export function subText(hass, view) {
   if (view.inFault) return tr(hass, `pos_${["open", "closed"].includes(view.pos) ? view.pos : "unknown"}`);
+  if (view.obstacle && view.pos === "open") return tr(hass, "obstacle_wait");
   return view.closeAt ? tr(hass, "closes_in", { t: countdown(view.closeAt) }) : "";
 }
 

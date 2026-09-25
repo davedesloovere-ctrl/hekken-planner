@@ -3,7 +3,7 @@
 from .rules import DAYS  # noqa: F401
 
 DOMAIN = "hekken"
-VERSION = "0.2.7"
+VERSION = "0.3.0"
 
 CONF_RELAY_TYPE = "relay_type"
 RELAY_UNIFI = "unifi"
@@ -23,6 +23,10 @@ CONF_RETRY_DELAY = "retry_delay"
 CONF_PRESENCE = "presence_entities"
 CONF_NOTIFY = "notify_service"
 CONF_RULES = "rules"
+CONF_OBSTACLE_ENTITIES = "obstacle_entities"
+CONF_OBSTACLE_HOLD = "obstacle_hold"
+CONF_OBSTACLE_STOP = "obstacle_stop"
+CONF_WEBHOOK_ID = "webhook_id"
 
 R_ID = "id"
 R_NAME = "name"
@@ -38,6 +42,8 @@ R_SKIP_HOME = "skip_when_home"
 
 DEFAULT_TRAVEL_TIME = 30
 DEFAULT_RETRIES = 1
+DEFAULT_OBSTACLE_HOLD = 60  # seconden dat een camerasignaal als 'bezet' telt
+MAX_OBSTACLE_WAIT = 600  # langer wachten op een vrije zone doen we niet
 DEFAULT_RETRY_DELAY = 5  # minuten tussen twee pogingen
 
 # Noodrem: zoveel pulsen binnen dit venster en de planner gaat in storing,

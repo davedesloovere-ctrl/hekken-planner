@@ -41,7 +41,10 @@
           "retries": "Extra attempts",
           "presence_entities": "Who counts as home",
           "notify_service": "Notify on problems",
-          "retry_delay": "Time until next attempt"
+          "retry_delay": "Time until next attempt",
+          "obstacle_entities": "Obstacle sensors (camera)",
+          "obstacle_hold": "Zone busy after motion",
+          "obstacle_stop": "Stop pulse on motion while closing"
         },
         "data_description": {
           "relay_entity": "The UniFi Access button, switch, lock or script that moves the gate.",
@@ -51,7 +54,10 @@
           "retries": "How many extra pulses before the gate goes into fault. 1 means: one pulse, one more after the wait, then fault.",
           "presence_entities": "Persons, phones or the Home zone. If anyone is home, rules with 'not when someone is home' skip closing.",
           "notify_service": "Optional, e.g. notify.mobile_app_phone. Leave empty for a Home Assistant notification only.",
-          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it."
+          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it.",
+          "obstacle_entities": "Optional: sensors that turn on when something moves in the gate zone, e.g. 'Person detected' from UniFi Protect. The webhook address for a Protect alarm is on the Hekken page.",
+          "obstacle_hold": "How long after the last motion the zone still counts as busy. Only then does the gate close.",
+          "obstacle_stop": "Sends one pulse to stop the gate and puts the planner in fault. Only enable if your motor stops, not reverses, on a pulse while closing."
         }
       }
     },
@@ -121,12 +127,18 @@
           "retries": "Extra attempts",
           "presence_entities": "Who counts as home",
           "notify_service": "Notify on problems",
-          "retry_delay": "Time until next attempt"
+          "retry_delay": "Time until next attempt",
+          "obstacle_entities": "Obstacle sensors (camera)",
+          "obstacle_hold": "Zone busy after motion",
+          "obstacle_stop": "Stop pulse on motion while closing"
         },
         "data_description": {
           "travel_time": "How long the gate takes to fully open or close. No new pulse is sent within this time, otherwise the gate stops or reverses.",
           "retries": "How many extra pulses before the gate goes into fault. 1 means: one pulse, one more after the wait, then fault.",
-          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it."
+          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it.",
+          "obstacle_entities": "Optional: sensors that turn on when something moves in the gate zone, e.g. 'Person detected' from UniFi Protect. The webhook address for a Protect alarm is on the Hekken page.",
+          "obstacle_hold": "How long after the last motion the zone still counts as busy. Only then does the gate close.",
+          "obstacle_stop": "Sends one pulse to stop the gate and puts the planner in fault. Only enable if your motor stops, not reverses, on a pulse while closing."
         }
       },
       "unifi": {
@@ -201,6 +213,9 @@
     "binary_sensor": {
       "fault": {
         "name": "Fault"
+      },
+      "obstacle": {
+        "name": "Obstacle"
       }
     },
     "button": {

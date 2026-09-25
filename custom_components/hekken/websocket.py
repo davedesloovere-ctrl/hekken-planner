@@ -11,13 +11,17 @@ from uuid import uuid4
 
 import voluptuous as vol
 
-from homeassistant.components import websocket_api
+from homeassistant.components import webhook, websocket_api
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr, entity_registry as er
+from homeassistant.helpers.network import NoURLAvailableError, get_url
 
 from .const import (
     CONF_NOTIFY,
+    CONF_OBSTACLE_ENTITIES,
+    CONF_OBSTACLE_HOLD,
+    CONF_OBSTACLE_STOP,
     CONF_PRESENCE,
     CONF_RELAY,
     CONF_RETRIES,
@@ -26,6 +30,8 @@ from .const import (
     CONF_SENSOR,
     CONF_SENSOR_INVERTED,
     CONF_TRAVEL_TIME,
+    CONF_WEBHOOK_ID,
+    DEFAULT_OBSTACLE_HOLD,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
@@ -50,7 +56,19 @@ def _loaded_entries(hass: HomeAssistant) -> list[ConfigEntry]:
     ]
 
 
-def _entry_payload(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
+def _webhook_url(hass: HomeAssistant, entry: ConfigEntry) -> str | None:
+    webhook_id = entry.data.get(CONF_WEBHOOK_ID)
+    if not webhook_id:
+        return None
+    path = webhook.async_generate_path(webhook_id)
+    try:
+        # Intern adres: de camera zit in je eigen netwerk.
+        return f"{get_url(hass, allow_external=False, allow_cloud=False)}{path}"
+    except NoURLAvailableError:
+        return path
+
+
+def _entry_payload(hass: HomeAssistant, entry: ConfigEntry, is_admin: bool) -> dict[str, Any]:
     reg = er.async_get(hass)
     device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, entry.entry_id)})
     # Hernoem je het apparaat in Home Assistant ("Poort"), dan tonen pagina en kaart die naam.
@@ -80,11 +98,17 @@ def _entry_payload(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
             "retry_delay": float(cfg.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY)),
             "presence_entities": list(cfg.get(CONF_PRESENCE) or []),
             "notify_service": cfg.get(CONF_NOTIFY) or "",
+            "obstacle_entities": list(cfg.get(CONF_OBSTACLE_ENTITIES) or []),
+            "obstacle_hold": int(cfg.get(CONF_OBSTACLE_HOLD, DEFAULT_OBSTACLE_HOLD)),
+            "obstacle_stop": bool(cfg.get(CONF_OBSTACLE_STOP, False)),
         },
+        # Het webhook-adres is een geheim; enkel beheerders krijgen het.
+        "webhook_url": _webhook_url(hass, entry) if is_admin else None,
         "rules": rules,
         "entities": {
             "cover": eid("cover", "cover"),
             "fault": eid("binary_sensor", "fault"),
+            "obstacle": eid("binary_sensor", "obstacle"),
             "reset": eid("button", "reset_fault"),
             "automatic": eid("switch", "automatic"),
             "auto_close_at": eid("sensor", "auto_close_at"),
@@ -111,7 +135,7 @@ def ws_list(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg
         {
             "version": VERSION,
             "is_admin": connection.user.is_admin,
-            "entries": [_entry_payload(hass, e) for e in _loaded_entries(hass)],
+            "entries": [_entry_payload(hass, e, connection.user.is_admin) for e in _loaded_entries(hass)],
         },
     )
 

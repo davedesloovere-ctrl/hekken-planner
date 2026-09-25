@@ -18,7 +18,7 @@ from .entity import HekkenEntity
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities([FaultSensor(entry.runtime_data)])
+    async_add_entities([FaultSensor(entry.runtime_data), ObstacleSensor(entry.runtime_data)])
 
 
 class FaultSensor(HekkenEntity, BinarySensorEntity, RestoreEntity):
@@ -48,4 +48,26 @@ class FaultSensor(HekkenEntity, BinarySensorEntity, RestoreEntity):
         return {
             "reden": self.ctrl.fault,
             "sinds": self.ctrl.fault_since.isoformat() if self.ctrl.fault_since else None,
+        }
+
+
+class ObstacleSensor(HekkenEntity, BinarySensorEntity):
+    """Aan zolang er (recent) beweging in de zone van de poort is."""
+
+    _attr_translation_key = "obstacle"
+    _attr_device_class = BinarySensorDeviceClass.MOTION
+
+    def __init__(self, ctrl: GateController) -> None:
+        super().__init__(ctrl, "obstacle")
+
+    @property
+    def is_on(self) -> bool:
+        return self.ctrl.obstacle_active
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "laatst_gezien": self.ctrl.obstacle_last.isoformat() if self.ctrl.obstacle_last else None,
+            "bron": self.ctrl.obstacle_source,
+            "vrij_vanaf": self.ctrl.obstacle_until.isoformat() if self.ctrl.obstacle_until else None,
         }

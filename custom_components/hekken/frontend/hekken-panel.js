@@ -1,7 +1,7 @@
 // Hekkenplanner: de pagina in de zijbalk van Home Assistant.
 // Geen build-stap, geen externe bibliotheken; gedeelde stukken in hekken-common.js.
 
-import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, endAction, esc, gateView, hhmm, startAction, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.7";
+import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, endAction, esc, gateView, hhmm, startAction, subText, svg, toMin, tr } from "./hekken-common.js?v=0.3.0";
 
 const CSS = `
 :host {
@@ -302,14 +302,14 @@ class HekkenPanel extends HTMLElement {
   _live() {
     const e = this.entry;
     if (!e || !this.$(".hero")) return;
-    const ids = [e.entities.cover, e.entities.fault, e.entities.automatic, e.entities.auto_close_at,
+    const ids = [e.entities.cover, e.entities.fault, e.entities.obstacle, e.entities.automatic, e.entities.auto_close_at,
       e.entities.active_rule, e.entities.last_action, ...Object.values(e.entities.rules || {}), ...e.settings.presence_entities];
     const sig = ids.map((id) => { const s = this.st(id); return s ? `${s.state}|${s.last_updated}` : "-"; }).join(",");
     if (sig === this._sig) return;
     this._sig = sig;
 
     const v = gateView(this._hass, e);
-    const { state, inFault, fault, autoOn, home, active, hasActive } = v;
+    const { state, inFault, fault, autoOn, home, active, hasActive, obstacle } = v;
 
     const hero = this.$(".hero");
     hero.className = `card hero is-${state} pos-${v.pos}`;
@@ -326,6 +326,7 @@ class HekkenPanel extends HTMLElement {
     // chips
     const chips = this.$(".chips");
     chips.innerHTML = `
+      ${obstacle ? `<span class="chip warn">${svg("motion")}${this.t("obstacle")}</span>` : ""}
       <button class="chip ${autoOn ? "on" : "off"}" data-chip="auto" ${this._data.is_admin ? "" : "disabled"}>
         ${svg("clock")}${this.t("automatic")}: ${autoOn ? this.t("auto_on") : this.t("auto_off")}
       </button>
@@ -602,6 +603,12 @@ class HekkenPanel extends HTMLElement {
       .map((s) => `notify.${s}`);
     const name = (id) => this._hass.states[id]?.attributes?.friendly_name || id;
     const dis = admin ? "" : "disabled";
+    d.obstacle_entities = d.obstacle_entities || [];
+    const motionSensors = Object.entries(this._hass.states)
+      .filter(([id, s]) => id.startsWith("binary_sensor.") && id !== e.entities.obstacle &&
+        (["motion", "occupancy", "presence"].includes(s.attributes?.device_class) || /detected|person|vehicle/.test(id) ||
+         d.obstacle_entities.includes(id)))
+      .map(([id]) => id).sort();
 
     box.innerHTML = `
       <h2>${this.t("settings")}</h2>
@@ -638,10 +645,32 @@ class HekkenPanel extends HTMLElement {
         <label class="sw"><input type="checkbox" data-inv ${d.sensor_inverted ? "checked" : ""} ${dis}><span></span></label>
         <div class="d">${this.t("inverted_d")}</div>
       </div>
+      <h2 style="margin-top:22px">${svg("motion")}${this.t("safety")}</h2>
+      <p class="small muted" style="margin-top:-6px">${this.t("safety_d")}</p>
+      ${e.webhook_url ? `
+      <div class="field">
+        <label>${this.t("webhook")}</label>
+        <div class="inline" style="gap:8px"><input type="text" readonly value="${esc(e.webhook_url)}" data-webhook style="flex:1;font-size:12px"><button type="button" class="btn" data-copy style="flex:none;padding:8px 12px">${this.t("copy")}</button></div>
+        <div class="hint">${this.t("webhook_d")}</div>
+      </div>` : ""}
+      <div class="field">
+        <label>${this.t("obstacle_entities")}</label>
+        <div class="pchips">${motionSensors.length ? motionSensors.map((id) => `<button type="button" data-o="${esc(id)}" class="${d.obstacle_entities.includes(id) ? "on" : ""}" ${dis}>${esc(name(id))}</button>`).join("") : `<span class="small muted">${this.t("no_obstacle_entities")}</span>`}</div>
+      </div>
+      <div class="field">
+        <label>${this.t("obstacle_hold")}</label>
+        <div class="stepper"><button type="button" data-s="obstacle_hold" data-d="-10" ${dis}>−</button><input type="number" data-n="obstacle_hold" min="10" max="600" value="${d.obstacle_hold ?? 60}" ${dis}><button type="button" data-s="obstacle_hold" data-d="10" ${dis}>+</button> ${this.t("sec")}</div>
+        <div class="hint">${this.t("obstacle_hold_d")}</div>
+      </div>
+      <div class="opt" style="border-top:0;padding-top:0">
+        <div class="t">${this.t("obstacle_stop")}</div>
+        <label class="sw"><input type="checkbox" data-ostop ${d.obstacle_stop ? "checked" : ""} ${dis}><span></span></label>
+        <div class="d">${this.t("obstacle_stop_d")}</div>
+      </div>
       ${admin ? `<div class="foot" style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" data-save-settings>${this.t("save")}</button></div>` : ""}`;
 
     if (!admin) return;
-    const limits = { travel_time: [5, 180], retries: [0, 3], retry_delay: [1, 60] };
+    const limits = { travel_time: [5, 180], retries: [0, 3], retry_delay: [1, 60], obstacle_hold: [10, 600] };
     box.querySelectorAll("[data-n]").forEach((el) => el.addEventListener("input", () => { d[el.dataset.n] = Number(el.value); }));
     box.querySelectorAll("[data-s]").forEach((b) =>
       b.addEventListener("click", () => {
@@ -657,6 +686,18 @@ class HekkenPanel extends HTMLElement {
       }));
     box.querySelector("[data-notify]").addEventListener("change", (ev) => { d.notify_service = ev.target.value; });
     box.querySelector("[data-inv]").addEventListener("change", (ev) => { d.sensor_inverted = ev.target.checked; });
+    box.querySelector("[data-ostop]").addEventListener("change", (ev) => { d.obstacle_stop = ev.target.checked; });
+    box.querySelectorAll("[data-o]").forEach((b) =>
+      b.addEventListener("click", () => {
+        const id = b.dataset.o;
+        d.obstacle_entities = d.obstacle_entities.includes(id) ? d.obstacle_entities.filter((x) => x !== id) : [...d.obstacle_entities, id];
+        b.classList.toggle("on");
+      }));
+    box.querySelector("[data-copy]")?.addEventListener("click", async () => {
+      const input = box.querySelector("[data-webhook]");
+      try { await navigator.clipboard.writeText(input.value); } catch { input.select(); document.execCommand("copy"); }
+      this.toast(this.t("copied"));
+    });
     box.querySelector("[data-save-settings]").addEventListener("click", async () => {
       try {
         await this._hass.callWS({ type: "hekken/save_settings", entry_id: e.entry_id, settings: d });

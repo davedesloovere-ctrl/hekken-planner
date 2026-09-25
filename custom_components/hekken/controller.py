@@ -21,6 +21,9 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_NOTIFY,
+    CONF_OBSTACLE_ENTITIES,
+    CONF_OBSTACLE_HOLD,
+    CONF_OBSTACLE_STOP,
     CONF_PRESENCE,
     CONF_RELAY,
     CONF_RELAY_TYPE,
@@ -35,10 +38,12 @@ from .const import (
     CONF_UNIFI_HOST,
     CONF_UNIFI_TOKEN,
     CONF_UNIFI_VERIFY_SSL,
+    DEFAULT_OBSTACLE_HOLD,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
     EVENT_FAILED,
+    MAX_OBSTACLE_WAIT,
     MAX_PULSES,
     MAX_PULSES_WINDOW,
     R_AUTO_CLOSE,
@@ -82,6 +87,15 @@ class GateController:
         self.presence: list[str] = list(cfg.get(CONF_PRESENCE) or [])
         self.notify: str = (cfg.get(CONF_NOTIFY) or "").strip()
         self.rules: list[dict] = list(entry.options.get(CONF_RULES, []))
+        # Veiligheid zonder fotocel: een camera meldt beweging in de zone van de poort.
+        self.obstacle_entities: list[str] = list(cfg.get(CONF_OBSTACLE_ENTITIES) or [])
+        self.obstacle_hold: int = int(cfg.get(CONF_OBSTACLE_HOLD, DEFAULT_OBSTACLE_HOLD))
+        self.obstacle_stop: bool = bool(cfg.get(CONF_OBSTACLE_STOP, False))
+        self.obstacle_until: datetime | None = None
+        self.obstacle_last: datetime | None = None
+        self.obstacle_source: str | None = None
+        self._obstacle_unsub: CALLBACK_TYPE | None = None
+        self._closing_pulsed = False
 
         self.auto_enabled = True
         self.rule_enabled: dict[str, bool] = {r[R_ID]: True for r in self.rules}
@@ -126,6 +140,18 @@ class GateController:
                     pass
         return False
 
+    @property
+    def obstacle_active(self) -> bool:
+        """Is er nu, of zeer recent, iemand of iets in de zone van de poort?"""
+        for entity_id in self.obstacle_entities:
+            state = self.hass.states.get(entity_id)
+            if state is not None and state.state == "on":
+                return True
+        return self.obstacle_until is not None and dt_util.utcnow() < self.obstacle_until
+
+    def _obstacle_clear_at(self) -> datetime:
+        return max(self.obstacle_until or dt_util.utcnow(), dt_util.utcnow())
+
     def active_rules(self) -> list[dict]:
         now = dt_util.now()
         return [
@@ -146,6 +172,10 @@ class GateController:
             self._unsubs.append(
                 async_track_state_change_event(self.hass, self.presence, self._on_presence)
             )
+        if self.obstacle_entities:
+            self._unsubs.append(
+                async_track_state_change_event(self.hass, self.obstacle_entities, self._on_obstacle_entity)
+            )
         self._unsubs.append(async_track_time_change(self.hass, self._on_tick, second=0))
         self._update_auto_close()
 
@@ -155,6 +185,9 @@ class GateController:
             unsub()
         self._unsubs.clear()
         self._cancel_auto_close()
+        if self._obstacle_unsub is not None:
+            self._obstacle_unsub()
+            self._obstacle_unsub = None
         if self._task and not self._task.done():
             self._task.cancel()
 
@@ -199,6 +232,77 @@ class GateController:
     def _on_presence(self, event: Event) -> None:
         self._update_auto_close()
         self._notify_listeners()
+
+    # --- obstakel (camera) -----------------------------------------------
+
+    @callback
+    def _on_obstacle_entity(self, event: Event) -> None:
+        new = event.data.get("new_state")
+        if new is not None and new.state == "on":
+            self.trigger_obstacle(new.attributes.get("friendly_name") or new.entity_id)
+        else:
+            # Pas na de wachttijd telt de zone weer als vrij.
+            self.trigger_obstacle(None)
+
+    @callback
+    def trigger_obstacle(self, source: str | None) -> None:
+        """Beweging in de zone: van een camera-webhook of een sensor."""
+        now = dt_util.utcnow()
+        self.obstacle_until = now + timedelta(seconds=self.obstacle_hold)
+        if source:
+            self.obstacle_last = now
+            self.obstacle_source = source
+        if self._obstacle_unsub is not None:
+            self._obstacle_unsub()
+        self._obstacle_unsub = async_track_point_in_utc_time(
+            self.hass, self._obstacle_expired, self.obstacle_until
+        )
+        # Het automatisch sluiten schuift mee op tot de zone vrij is.
+        if self.auto_close_at is not None and self.auto_close_at < self.obstacle_until:
+            self._schedule_auto_close(self.obstacle_until + timedelta(seconds=5))
+        if source and self.motion == CLOSING and self._closing_pulsed:
+            self.hass.async_create_task(self._obstacle_while_closing(source))
+        self._notify_listeners()
+
+    @callback
+    def _obstacle_expired(self, _now: datetime) -> None:
+        self._obstacle_unsub = None
+        self._notify_listeners()
+
+    async def _obstacle_while_closing(self, source: str) -> None:
+        if not self.obstacle_stop:
+            await self._alert(
+                f"{self.entry.title}: beweging in de zone ({source}) terwijl de poort sluit.",
+                wanted="dicht", reason="beweging tijdens sluiten",
+            )
+            return
+        # Eén puls om te stoppen, daarna storing: zo gebeurt er niets meer vanzelf.
+        if self._task and not self._task.done():
+            self._task.cancel()
+        try:
+            await self._pulse()
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Stoppuls mislukt: %s", err)
+        await self._raise_fault(
+            "Beweging in de zone tijdens het sluiten, poort gestopt",
+            f"{self.entry.title}: beweging in de zone ({source}) tijdens het sluiten. "
+            "Er is een puls gestuurd om te stoppen. Kijk de poort na en reset daarna de storing.",
+            wanted="dicht", reason="beweging tijdens sluiten",
+        )
+
+    async def _wait_zone_clear(self) -> bool:
+        """Wacht tot de zone vrij is voor we sluiten. False als het te lang duurt."""
+        if not self.obstacle_active:
+            return True
+        self._set_last_action("Wacht met sluiten: beweging in de zone")
+        self._notify_listeners()
+        waited = 0.0
+        while self.obstacle_active:
+            if waited >= MAX_OBSTACLE_WAIT:
+                return False
+            await asyncio.sleep(2)
+            waited += 2
+        return True
 
     @callback
     def _on_tick(self, now: datetime) -> None:
@@ -250,10 +354,17 @@ class GateController:
             return
         if self._auto_close_unsub is not None:
             return
-        self.auto_close_at = dt_util.utcnow() + timedelta(minutes=minutes)
-        self._auto_close_unsub = async_track_point_in_utc_time(
-            self.hass, self._auto_close_fire, self.auto_close_at
-        )
+        at = dt_util.utcnow() + timedelta(minutes=minutes)
+        if self.obstacle_active:
+            at = max(at, self._obstacle_clear_at() + timedelta(seconds=5))
+        self._schedule_auto_close(at)
+
+    @callback
+    def _schedule_auto_close(self, at: datetime) -> None:
+        if self._auto_close_unsub is not None:
+            self._auto_close_unsub()
+        self.auto_close_at = at
+        self._auto_close_unsub = async_track_point_in_utc_time(self.hass, self._auto_close_fire, at)
 
     @callback
     def _cancel_auto_close(self) -> None:
@@ -266,6 +377,11 @@ class GateController:
     def _auto_close_fire(self, _now: datetime) -> None:
         self._auto_close_unsub = None
         self.auto_close_at = None
+        if self._auto_close_minutes() is not None and self.obstacle_active:
+            self._set_last_action("Automatisch sluiten uitgesteld: beweging in de zone")
+            self._schedule_auto_close(self._obstacle_clear_at() + timedelta(seconds=5))
+            self._notify_listeners()
+            return
         if self._auto_close_minutes() is not None:
             names = ", ".join(r[R_NAME] for r in self.active_rules() if r.get(R_AUTO_CLOSE))
             self.request(False, f"{names}: automatisch sluiten")
@@ -317,14 +433,19 @@ class GateController:
 
     async def _enter_fault(self, want_open: bool, why: str) -> None:
         word = "open" if want_open else "dicht"
-        self.fault = f"Niet {word} gegaan: {why}"
-        self.fault_since = dt_util.utcnow()
-        self._cancel_auto_close()
-        await self._alert(
+        await self._raise_fault(
+            f"Niet {word} gegaan: {why}",
             f"{self.entry.title} staat in storing: niet {word} gegaan, {why}. "
             "Er worden geen pulsen meer gestuurd tot je de storing reset.",
             wanted=word, reason=why,
         )
+
+    async def _raise_fault(self, fault: str, message: str, wanted: str, reason: str) -> None:
+        self.fault = fault
+        self.fault_since = dt_util.utcnow()
+        self._cancel_auto_close()
+        self._notify_listeners()
+        await self._alert(message, wanted=wanted, reason=reason)
 
     def _too_many_pulses(self) -> bool:
         cutoff = dt_util.utcnow() - timedelta(seconds=MAX_PULSES_WINDOW)
@@ -360,6 +481,14 @@ class GateController:
                 await self._wait_until_settled()
                 if self.is_open == want_open or self.fault:
                     return
+                if not want_open and not await self._wait_zone_clear():
+                    await self._alert(
+                        f"{self.entry.title}: niet gesloten, de zone bleef {MAX_OBSTACLE_WAIT // 60} minuten bezet.",
+                        wanted="dicht", reason="zone bezet",
+                    )
+                    return
+                if self.is_open == want_open or self.fault:
+                    return
                 if self._too_many_pulses():
                     await self._enter_fault(
                         want_open,
@@ -373,6 +502,7 @@ class GateController:
                     # wachten, eventueel nog eens, en anders storing.
                     pulse_error = str(err) or type(err).__name__
                     _LOGGER.warning("Puls naar het hekken mislukt: %s", pulse_error)
+                self._closing_pulsed = not want_open
                 # Tussen twee pogingen blijven we de sensor volgen: gaat het hekken
                 # alsnog in de juiste stand, dan is er geen tweede puls nodig.
                 last = attempt == attempts - 1
@@ -388,6 +518,7 @@ class GateController:
         finally:
             if self._task is me or self._task is None:
                 self.motion = None
+                self._closing_pulsed = False
                 self._update_auto_close()
                 self._notify_listeners()
 

@@ -70,7 +70,8 @@ def test_normalize_settings():
     s = rules.normalize_settings({"travel_time": "30", "retries": 1, "retry_delay": "5",
                                   "presence_entities": ["person.dave"], "notify_service": " notify.x "})
     assert s == {"travel_time": 30, "retries": 1, "retry_delay": 5.0, "presence_entities": ["person.dave"],
-                 "notify_service": "notify.x", "sensor_inverted": False}
+                 "notify_service": "notify.x", "sensor_inverted": False,
+                 "obstacle_entities": [], "obstacle_hold": 60, "obstacle_stop": False}
 
 
 def test_frontend_imports_current_version():

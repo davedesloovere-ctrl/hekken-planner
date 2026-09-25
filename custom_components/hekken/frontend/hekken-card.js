@@ -1,7 +1,7 @@
 // Hekken-kaart voor dashboards. De integratie laadt dit bestand zelf in;
 // de kaart haalt hekken, entiteiten en aanwezigheid uit de Hekkenplanner.
 
-import { DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.7";
+import { DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, toMin, tr } from "./hekken-common.js?v=0.3.0";
 
 const CSS = `
 :host { ${TOKENS_CSS} display: block; }
@@ -150,7 +150,7 @@ class HekkenCard extends HTMLElement {
     const e = this._entry;
     const card = this.shadowRoot?.querySelector("ha-card");
     if (!e || !card?.querySelector(".gc")) return;
-    const watch = [e.entities.cover, e.entities.fault, e.entities.automatic, e.entities.auto_close_at,
+    const watch = [e.entities.cover, e.entities.fault, e.entities.obstacle, e.entities.automatic, e.entities.auto_close_at,
       e.entities.active_rule, e.entities.last_action, ...Object.values(e.entities.rules || {}), ...e.settings.presence_entities];
     const sig = watch.map((id) => this._hass.states[id]?.state ?? "-").join("|");
     if (sig === this._sig) return;
@@ -185,6 +185,7 @@ class HekkenCard extends HTMLElement {
       return;
     }
     chips.innerHTML = `
+      ${v.obstacle ? `<span class="chip warn">${svg("motion")}${this.t("obstacle")}</span>` : ""}
       <button class="chip ${v.autoOn ? "on" : "off"}" data-auto ${this._isAdmin ? "" : "disabled"}>
         ${svg("clock")}${this.t("automatic")}
       </button>

@@ -3,11 +3,11 @@
   "name": "Hekkenplanner",
   "codeowners": ["@davedesloovere-ctrl"],
   "config_flow": true,
-  "dependencies": ["http", "frontend", "panel_custom", "websocket_api"],
+  "dependencies": ["http", "frontend", "panel_custom", "webhook", "websocket_api"],
   "documentation": "https://github.com/davedesloovere-ctrl/hekken-planner",
   "integration_type": "device",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/davedesloovere-ctrl/hekken-planner/issues",
   "requirements": [],
-  "version": "0.2.7"
+  "version": "0.3.0"
 }

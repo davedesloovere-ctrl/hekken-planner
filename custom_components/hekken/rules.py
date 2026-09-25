@@ -147,6 +147,16 @@ def normalize_settings(raw: dict) -> dict:
     if not isinstance(presence, list) or not all(isinstance(e, str) and "." in e for e in presence):
         raise ValueError("presence_entities moet een lijst entiteiten zijn")
     notify = str(raw.get("notify_service") or "").strip()
+    obstacles = raw.get("obstacle_entities") or []
+    if not isinstance(obstacles, list) or not all(isinstance(e, str) and "." in e for e in obstacles):
+        raise ValueError("obstacle_entities moet een lijst entiteiten zijn")
+    hold = raw.get("obstacle_hold", 60)
+    try:
+        hold = int(hold)
+    except (TypeError, ValueError) as err:
+        raise ValueError("obstacle_hold is ongeldig") from err
+    if not 10 <= hold <= 600:
+        raise ValueError("obstacle_hold moet tussen 10 en 600 liggen")
     return {
         "travel_time": number("travel_time", 5, 180),
         "retries": number("retries", 0, 3),
@@ -154,4 +164,7 @@ def normalize_settings(raw: dict) -> dict:
         "presence_entities": presence,
         "notify_service": notify,
         "sensor_inverted": bool(raw.get("sensor_inverted")),
+        "obstacle_entities": obstacles,
+        "obstacle_hold": hold,
+        "obstacle_stop": bool(raw.get("obstacle_stop")),
     }
