@@ -1,0 +1,28 @@
+name: Release
+
+# Een tag als v0.2.0 pushen maakt een GitHub-release; HACS toont die als nieuwe versie.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versie in manifest.json moet gelijk zijn aan de tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(python3 -c "import json;print(json.load(open('custom_components/hekken/manifest.json'))['version'])")
+          if [ "$tag" != "$manifest" ]; then
+            echo "Tag $GITHUB_REF_NAME past niet bij manifest-versie $manifest"; exit 1
+          fi
+
+      - name: Release maken
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "Hekkenplanner $GITHUB_REF_NAME" --generate-notes
