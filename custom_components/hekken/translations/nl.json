@@ -11,7 +11,7 @@
       },
       "unifi": {
         "title": "UniFi Access koppelen",
-        "description": "Maak in UniFi Access een API-token aan (Instellingen → Algemeen → Geavanceerd → API Token) met rechten om deuren te bekijken en te ontgrendelen. De API draait op poort 12445 van je console.",
+        "description": "Maak het token aan in de **UniFi Access-app** zelf (Access → Instellingen → Algemeen/Geavanceerd → API Token), met rechten om deuren te bekijken en te ontgrendelen. Een API-sleutel uit de instellingen van UniFi OS (Control Plane → Integrations) werkt hier niet. De API draait op poort 12445 van je console.",
         "data": {
           "unifi_host": "Adres van je UniFi-console",
           "unifi_token": "API-token",
@@ -59,7 +59,7 @@
       "already_configured": "Deze sensor hoort al bij een hekken."
     },
     "error": {
-      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten. Details: {error}",
+      "invalid_auth": "Het API-token wordt geweigerd. Gebruik een token uit de UniFi Access-app zelf (Access → Instellingen → API Token), geen API-sleutel van UniFi OS (Control Plane → Integrations): die werkt enkel voor UniFi Network. Details: {error}",
       "cannot_connect": "Home Assistant krijgt geen verbinding met UniFi Access op poort 12445. Controleer of Home Assistant de console kan bereiken (VLAN of firewall). Details: {error}",
       "no_doors": "Geen deuren gevonden in UniFi Access.",
       "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit. Details: {error}",
@@ -131,7 +131,7 @@
       },
       "unifi": {
         "title": "UniFi Access koppelen",
-        "description": "Maak in UniFi Access een API-token aan (Instellingen → Algemeen → Geavanceerd → API Token) met rechten om deuren te bekijken en te ontgrendelen. De API draait op poort 12445 van je console.",
+        "description": "Maak het token aan in de **UniFi Access-app** zelf (Access → Instellingen → Algemeen/Geavanceerd → API Token), met rechten om deuren te bekijken en te ontgrendelen. Een API-sleutel uit de instellingen van UniFi OS (Control Plane → Integrations) werkt hier niet. De API draait op poort 12445 van je console.",
         "data": {
           "unifi_host": "Adres van je UniFi-console",
           "unifi_token": "API-token",
@@ -154,7 +154,7 @@
       "no_name": "Geef de regel een naam.",
       "no_days": "Kies minstens één dag.",
       "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde.",
-      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten. Details: {error}",
+      "invalid_auth": "Het API-token wordt geweigerd. Gebruik een token uit de UniFi Access-app zelf (Access → Instellingen → API Token), geen API-sleutel van UniFi OS (Control Plane → Integrations): die werkt enkel voor UniFi Network. Details: {error}",
       "cannot_connect": "Home Assistant krijgt geen verbinding met UniFi Access op poort 12445. Controleer of Home Assistant de console kan bereiken (VLAN of firewall). Details: {error}",
       "no_doors": "Geen deuren gevonden in UniFi Access.",
       "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit. Details: {error}",

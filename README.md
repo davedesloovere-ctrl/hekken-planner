@@ -52,7 +52,7 @@ UniFi-verbinding.
 
 ## Wat je nodig hebt
 
-- **UniFi Access:** een API-token. Maak het aan in UniFi Access bij Instellingen → Algemeen →
+- **UniFi Access:** een API-token. Maak het aan in de **UniFi Access-app** zelf (niet bij de API-sleutels van UniFi OS onder Control Plane → Integrations, die werken enkel voor UniFi Network): Instellingen → Algemeen →
   Geavanceerd → API Token, met rechten om deuren te bekijken en te ontgrendelen. Home
   Assistant moet je console op poort 12445 kunnen bereiken. Bij het koppelen kies je de
   poort uit de lijst. Zet de deur in UniFi Access op een korte ontgrendeling, niet op
