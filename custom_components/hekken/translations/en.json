@@ -61,7 +61,8 @@
     "error": {
       "invalid_auth": "The API token was rejected. Check the token and its permissions.",
       "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
-      "no_doors": "No doors found in UniFi Access."
+      "no_doors": "No doors found in UniFi Access.",
+      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'."
     }
   },
   "options": {
@@ -154,7 +155,8 @@
       "no_action": "Pick at least one action: close automatically, open at start or close at end.",
       "invalid_auth": "The API token was rejected. Check the token and its permissions.",
       "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
-      "no_doors": "No doors found in UniFi Access."
+      "no_doors": "No doors found in UniFi Access.",
+      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'."
     }
   },
   "selector": {

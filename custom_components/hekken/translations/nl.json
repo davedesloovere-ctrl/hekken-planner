@@ -61,7 +61,8 @@
     "error": {
       "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
       "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
-      "no_doors": "Geen deuren gevonden in UniFi Access."
+      "no_doors": "Geen deuren gevonden in UniFi Access.",
+      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit."
     }
   },
   "options": {
@@ -154,7 +155,8 @@
       "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde.",
       "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
       "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
-      "no_doors": "Geen deuren gevonden in UniFi Access."
+      "no_doors": "Geen deuren gevonden in UniFi Access.",
+      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit."
     }
   },
   "selector": {

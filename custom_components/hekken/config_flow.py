@@ -68,7 +68,12 @@ from .const import (
     RELAY_UNIFI,
 )
 from .rules import describe
-from .unifi_access import UnifiAccessAuthError, UnifiAccessClient, UnifiAccessError
+from .unifi_access import (
+    UnifiAccessAuthError,
+    UnifiAccessCertError,
+    UnifiAccessClient,
+    UnifiAccessError,
+)
 
 RULE_SELECT = "rule"
 DOOR_SELECT = "door"
@@ -98,6 +103,8 @@ async def _fetch_doors(hass, data: dict[str, Any]) -> tuple[list[dict[str, Any]]
         doors = await client.async_get_doors()
     except UnifiAccessAuthError:
         return [], {"base": "invalid_auth"}
+    except UnifiAccessCertError:
+        return [], {"base": "invalid_cert"}
     except UnifiAccessError:
         return [], {"base": "cannot_connect"}
     if not doors:

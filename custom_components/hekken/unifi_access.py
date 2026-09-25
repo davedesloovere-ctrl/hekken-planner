@@ -22,6 +22,10 @@ class UnifiAccessAuthError(UnifiAccessError):
     """Het API-token klopt niet of heeft te weinig rechten."""
 
 
+class UnifiAccessCertError(UnifiAccessError):
+    """Het certificaat van de console wordt niet vertrouwd."""
+
+
 def api_base(host: str) -> str:
     """'192.168.1.1' of 'https://unifi.local' naar de basis-URL van de API."""
     host = host.strip().rstrip("/")
@@ -50,6 +54,8 @@ class UnifiAccessClient:
                     status = resp.status
         except UnifiAccessError:
             raise
+        except (aiohttp.ClientConnectorCertificateError, aiohttp.ClientSSLError) as err:
+            raise UnifiAccessCertError(f"certificaat niet vertrouwd: {err}") from err
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
             raise UnifiAccessError(f"UniFi Access niet bereikbaar: {err}") from err
 
