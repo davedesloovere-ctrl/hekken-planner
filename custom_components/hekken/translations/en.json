@@ -1,0 +1,114 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect gate",
+        "description": "Pick the relay that pulses the gate and the sensor that tells whether it is open or closed. An example rule is added after setup: weekdays 08:00-17:00, close after 15 minutes, not when someone is home.",
+        "data": {
+          "name": "Name",
+          "relay_entity": "Relay (pulse)",
+          "sensor_entity": "Position sensor",
+          "sensor_inverted": "Sensor inverted",
+          "travel_time": "Gate travel time",
+          "retries": "Extra attempts",
+          "presence_entities": "Who counts as home",
+          "notify_service": "Notify on problems"
+        },
+        "data_description": {
+          "relay_entity": "The UniFi Access button, switch, lock or script that moves the gate.",
+          "sensor_entity": "Your Sensative strip. By default 'on' means the gate is open.",
+          "sensor_inverted": "Tick if the sensor reports 'on' when the gate is closed.",
+          "travel_time": "How long the gate takes to fully open or close. No new pulse is sent within this time, otherwise the gate stops or reverses.",
+          "retries": "How many times to pulse again when the gate does not reach the requested position.",
+          "presence_entities": "Persons, phones or the Home zone. If anyone is home, rules with 'not when someone is home' skip closing.",
+          "notify_service": "Optional, e.g. notify.mobile_app_phone. Leave empty for a Home Assistant notification only."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This sensor already belongs to a gate."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Gate planner",
+        "description": "Current rules:\n{rules}",
+        "menu_options": {
+          "add_rule": "Add rule",
+          "edit_rule": "Edit rule",
+          "delete_rule": "Delete rule",
+          "settings": "Gate and sensors"
+        }
+      },
+      "edit_rule": {
+        "title": "Which rule?",
+        "data": { "rule": "Rule" }
+      },
+      "delete_rule": {
+        "title": "Delete rules",
+        "description": "Tick the rules to remove.",
+        "data": { "rule": "Rules" }
+      },
+      "rule": {
+        "title": "Rule",
+        "description": "A rule applies within its time window on the chosen days. Windows across midnight (22:00 to 06:00) are fine. Equal start and end mean all day.",
+        "data": {
+          "name": "Name",
+          "days": "Days",
+          "start": "From",
+          "end": "Until",
+          "auto_close": "Close automatically when open",
+          "auto_close_minutes": "Close after",
+          "skip_when_home": "Do not close when someone is home",
+          "open_at_start": "Open at the start of the window",
+          "close_at_end": "Close at the end of the window"
+        },
+        "data_description": {
+          "auto_close": "When the gate opens within this window (app, badge or here), it closes by itself after the set time.",
+          "skip_when_home": "Applies to automatic closing and to closing at the end. When the last person leaves, the timer starts again."
+        }
+      },
+      "settings": {
+        "title": "Gate and sensors",
+        "data": {
+          "relay_entity": "Relay (pulse)",
+          "sensor_entity": "Position sensor",
+          "sensor_inverted": "Sensor inverted",
+          "travel_time": "Gate travel time",
+          "retries": "Extra attempts",
+          "presence_entities": "Who counts as home",
+          "notify_service": "Notify on problems"
+        }
+      }
+    },
+    "error": {
+      "no_name": "Give the rule a name.",
+      "no_days": "Pick at least one day.",
+      "no_action": "Pick at least one action: close automatically, open at start or close at end."
+    }
+  },
+  "selector": {
+    "days": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "automatic": { "name": "Automatic" }
+    },
+    "sensor": {
+      "auto_close_at": { "name": "Closes automatically at" },
+      "active_rule": { "name": "Active rule" },
+      "last_action": { "name": "Last action" }
+    }
+  }
+}

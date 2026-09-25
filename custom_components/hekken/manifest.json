@@ -1,0 +1,13 @@
+{
+  "domain": "hekken",
+  "name": "Hekkenplanner",
+  "codeowners": ["@davedesloovere-ctrl"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/davedesloovere-ctrl/hekken-planner",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/davedesloovere-ctrl/hekken-planner/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

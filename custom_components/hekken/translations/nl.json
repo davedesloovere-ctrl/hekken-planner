@@ -1,0 +1,114 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Hekken koppelen",
+        "description": "Kies het relais dat het hekken een puls geeft en de sensor die ziet of het open of dicht staat. Na het koppelen staat er al een voorbeeldregel klaar: werkdagen 08:00-17:00, sluit na 15 minuten, niet als iemand thuis is.",
+        "data": {
+          "name": "Naam",
+          "relay_entity": "Relais (puls)",
+          "sensor_entity": "Positiesensor",
+          "sensor_inverted": "Sensor omgekeerd",
+          "travel_time": "Looptijd van het hekken",
+          "retries": "Extra pogingen",
+          "presence_entities": "Wie telt als thuis",
+          "notify_service": "Melding bij problemen"
+        },
+        "data_description": {
+          "relay_entity": "De knop, schakelaar, slot of script van UniFi Access die het hekken laat bewegen.",
+          "sensor_entity": "Je Sensative strip. Standaard betekent 'aan' dat het hekken open staat.",
+          "sensor_inverted": "Aanvinken als de sensor 'aan' geeft wanneer het hekken dicht is.",
+          "travel_time": "Hoe lang het hekken nodig heeft om volledig open of dicht te gaan. Binnen deze tijd stuurt de planner geen nieuwe puls, anders stopt of keert het hekken.",
+          "retries": "Hoe vaak opnieuw pulsen als het hekken niet in de gevraagde stand komt.",
+          "presence_entities": "Personen, gsm's of de zone Thuis. Is er één thuis, dan slaan regels met 'niet als iemand thuis is' het sluiten over.",
+          "notify_service": "Optioneel, bv. notify.mobile_app_gsm_dave. Leeg laten voor enkel een melding in Home Assistant."
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Deze sensor hoort al bij een hekken."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hekkenplanner",
+        "description": "Huidige regels:\n{rules}",
+        "menu_options": {
+          "add_rule": "Regel toevoegen",
+          "edit_rule": "Regel bewerken",
+          "delete_rule": "Regel verwijderen",
+          "settings": "Hekken en sensoren"
+        }
+      },
+      "edit_rule": {
+        "title": "Welke regel?",
+        "data": { "rule": "Regel" }
+      },
+      "delete_rule": {
+        "title": "Regels verwijderen",
+        "description": "Vink de regels aan die weg mogen.",
+        "data": { "rule": "Regels" }
+      },
+      "rule": {
+        "title": "Regel",
+        "description": "Een regel geldt binnen het tijdsvenster op de gekozen dagen. Een venster over middernacht (22:00 tot 06:00) mag. Gelijke begin- en einduren betekenen de hele dag.",
+        "data": {
+          "name": "Naam",
+          "days": "Dagen",
+          "start": "Van",
+          "end": "Tot",
+          "auto_close": "Automatisch sluiten als het open staat",
+          "auto_close_minutes": "Sluiten na",
+          "skip_when_home": "Niet sluiten als iemand thuis is",
+          "open_at_start": "Openen bij het begin van het venster",
+          "close_at_end": "Sluiten bij het einde van het venster"
+        },
+        "data_description": {
+          "auto_close": "Gaat het hekken open binnen dit venster (via de app, badge of hier), dan sluit het vanzelf na de ingestelde tijd.",
+          "skip_when_home": "Geldt voor automatisch sluiten en voor sluiten bij het einde. Vertrekt de laatste persoon, dan begint de teller opnieuw."
+        }
+      },
+      "settings": {
+        "title": "Hekken en sensoren",
+        "data": {
+          "relay_entity": "Relais (puls)",
+          "sensor_entity": "Positiesensor",
+          "sensor_inverted": "Sensor omgekeerd",
+          "travel_time": "Looptijd van het hekken",
+          "retries": "Extra pogingen",
+          "presence_entities": "Wie telt als thuis",
+          "notify_service": "Melding bij problemen"
+        }
+      }
+    },
+    "error": {
+      "no_name": "Geef de regel een naam.",
+      "no_days": "Kies minstens één dag.",
+      "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde."
+    }
+  },
+  "selector": {
+    "days": {
+      "options": {
+        "mon": "Maandag",
+        "tue": "Dinsdag",
+        "wed": "Woensdag",
+        "thu": "Donderdag",
+        "fri": "Vrijdag",
+        "sat": "Zaterdag",
+        "sun": "Zondag"
+      }
+    }
+  },
+  "entity": {
+    "switch": {
+      "automatic": { "name": "Automatisch" }
+    },
+    "sensor": {
+      "auto_close_at": { "name": "Sluit automatisch om" },
+      "active_rule": { "name": "Actieve regel" },
+      "last_action": { "name": "Laatste actie" }
+    }
+  }
+}
