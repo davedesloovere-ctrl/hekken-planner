@@ -104,7 +104,7 @@ async def main():
     while not c.fault and loop.time() - start < 60:
         await asyncio.sleep(0.5)
     print(f"storing na {loop.time() - start:.0f} s")
-    assert c.fault and "niet bereikbaar" in c.fault, c.fault
+    assert c.fault and "Cannot connect" in c.fault, c.fault
     print("storing bij onbereikbaar UniFi:", c.fault)
 
     c.async_stop()

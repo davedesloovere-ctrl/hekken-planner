@@ -6,6 +6,7 @@ Regels en de rest beheer je op de Hekken-pagina in de zijbalk; het menu onder
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 from uuid import uuid4
 
@@ -72,8 +73,11 @@ from .unifi_access import (
     UnifiAccessAuthError,
     UnifiAccessCertError,
     UnifiAccessClient,
+    UnifiAccessConnectError,
     UnifiAccessError,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 RULE_SELECT = "rule"
 DOOR_SELECT = "door"
@@ -97,19 +101,27 @@ def _door_schema(doors: list[dict[str, Any]], current: str | None = None) -> vol
     return vol.Schema({key: SelectSelector(SelectSelectorConfig(options=options, mode=SelectSelectorMode.LIST))})
 
 
-async def _fetch_doors(hass, data: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, str]]:
+async def _fetch_doors(
+    hass, data: dict[str, Any]
+) -> tuple[list[dict[str, Any]], dict[str, str], str]:
+    """Deuren ophalen. Geeft (deuren, fouten, foutdetail voor in het formulier)."""
     client = UnifiAccessClient(hass, data[CONF_UNIFI_HOST], data[CONF_UNIFI_TOKEN], data[CONF_UNIFI_VERIFY_SSL])
     try:
         doors = await client.async_get_doors()
-    except UnifiAccessAuthError:
-        return [], {"base": "invalid_auth"}
-    except UnifiAccessCertError:
-        return [], {"base": "invalid_cert"}
-    except UnifiAccessError:
-        return [], {"base": "cannot_connect"}
+    except UnifiAccessError as err:
+        _LOGGER.warning("UniFi Access op %s: %s", data[CONF_UNIFI_HOST], err)
+        if isinstance(err, UnifiAccessAuthError):
+            key = "invalid_auth"
+        elif isinstance(err, UnifiAccessCertError):
+            key = "invalid_cert"
+        elif isinstance(err, UnifiAccessConnectError):
+            key = "cannot_connect"
+        else:
+            key = "api_error"
+        return [], {"base": key}, str(err)[:300]
     if not doors:
-        return [], {"base": "no_doors"}
-    return doors, {}
+        return [], {"base": "no_doors"}, ""
+    return doors, {}, ""
 
 
 def _gate_schema(d: dict[str, Any], with_relay: bool, with_name: bool) -> vol.Schema:
@@ -215,14 +227,16 @@ class HekkenConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_unifi(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        detail = ""
         if user_input is not None:
             user_input[CONF_UNIFI_HOST] = user_input[CONF_UNIFI_HOST].strip()
-            self._doors, errors = await _fetch_doors(self.hass, user_input)
+            self._doors, errors, detail = await _fetch_doors(self.hass, user_input)
             if not errors:
                 self._data = {CONF_RELAY_TYPE: RELAY_UNIFI, **user_input}
                 return await self.async_step_door()
         return self.async_show_form(
-            step_id="unifi", data_schema=_unifi_schema(user_input or {}), errors=errors
+            step_id="unifi", data_schema=_unifi_schema(user_input or {}), errors=errors,
+            description_placeholders={"error": detail},
         )
 
     async def async_step_door(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
@@ -358,14 +372,16 @@ class HekkenOptionsFlow(OptionsFlow):
 
     async def async_step_unifi(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
+        detail = ""
         if user_input is not None:
             user_input[CONF_UNIFI_HOST] = user_input[CONF_UNIFI_HOST].strip()
-            self._doors, errors = await _fetch_doors(self.hass, user_input)
+            self._doors, errors, detail = await _fetch_doors(self.hass, user_input)
             if not errors:
                 self._unifi = user_input
                 return await self.async_step_door()
         return self.async_show_form(
-            step_id="unifi", data_schema=_unifi_schema(user_input or self._cfg), errors=errors
+            step_id="unifi", data_schema=_unifi_schema(user_input or self._cfg), errors=errors,
+            description_placeholders={"error": detail},
         )
 
     async def async_step_door(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:

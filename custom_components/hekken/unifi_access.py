@@ -22,6 +22,10 @@ class UnifiAccessAuthError(UnifiAccessError):
     """Het API-token klopt niet of heeft te weinig rechten."""
 
 
+class UnifiAccessConnectError(UnifiAccessError):
+    """De console antwoordt niet: netwerk, firewall of verkeerd adres."""
+
+
 class UnifiAccessCertError(UnifiAccessError):
     """Het certificaat van de console wordt niet vertrouwd."""
 
@@ -57,13 +61,15 @@ class UnifiAccessClient:
         except (aiohttp.ClientConnectorCertificateError, aiohttp.ClientSSLError) as err:
             raise UnifiAccessCertError(f"certificaat niet vertrouwd: {err}") from err
         except (aiohttp.ClientError, TimeoutError, ValueError) as err:
-            raise UnifiAccessError(f"UniFi Access niet bereikbaar: {err}") from err
+            raise UnifiAccessConnectError(
+                f"{type(err).__name__}: {str(err) or 'geen antwoord binnen 10 seconden'}"
+            ) from err
 
         if not isinstance(payload, dict):
-            raise UnifiAccessError(f"onverwacht antwoord (HTTP {status})")
+            raise UnifiAccessError(f"onverwacht antwoord (HTTP {status}): {str(payload)[:200]}")
         code = str(payload.get("code", ""))
         if status >= 400 or code != "SUCCESS":
-            message = payload.get("msg") or code or f"HTTP {status}"
+            message = f"{code or 'geen code'} (HTTP {status}): {payload.get('msg') or ''}".strip()
             if "AUTH" in code.upper() or "TOKEN" in code.upper():
                 raise UnifiAccessAuthError(message)
             raise UnifiAccessError(message)

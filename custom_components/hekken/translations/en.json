@@ -59,10 +59,11 @@
       "already_configured": "This sensor already belongs to a gate."
     },
     "error": {
-      "invalid_auth": "The API token was rejected. Check the token and its permissions.",
-      "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
+      "invalid_auth": "The API token was rejected. Check the token and its permissions. Details: {error}",
+      "cannot_connect": "Home Assistant cannot connect to UniFi Access on port 12445. Check that Home Assistant can reach the console (VLAN or firewall). Details: {error}",
       "no_doors": "No doors found in UniFi Access.",
-      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'."
+      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'. Details: {error}",
+      "api_error": "UniFi Access answers but returns an error. Check the token's permissions. Details: {error}"
     }
   },
   "options": {
@@ -153,10 +154,11 @@
       "no_name": "Give the rule a name.",
       "no_days": "Pick at least one day.",
       "no_action": "Pick at least one action: close automatically, open at start or close at end.",
-      "invalid_auth": "The API token was rejected. Check the token and its permissions.",
-      "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
+      "invalid_auth": "The API token was rejected. Check the token and its permissions. Details: {error}",
+      "cannot_connect": "Home Assistant cannot connect to UniFi Access on port 12445. Check that Home Assistant can reach the console (VLAN or firewall). Details: {error}",
       "no_doors": "No doors found in UniFi Access.",
-      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'."
+      "invalid_cert": "The console's certificate is not trusted. Turn off 'Verify certificate'. Details: {error}",
+      "api_error": "UniFi Access answers but returns an error. Check the token's permissions. Details: {error}"
     }
   },
   "selector": {

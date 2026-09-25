@@ -59,10 +59,11 @@
       "already_configured": "Deze sensor hoort al bij een hekken."
     },
     "error": {
-      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
-      "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
+      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten. Details: {error}",
+      "cannot_connect": "Home Assistant krijgt geen verbinding met UniFi Access op poort 12445. Controleer of Home Assistant de console kan bereiken (VLAN of firewall). Details: {error}",
       "no_doors": "Geen deuren gevonden in UniFi Access.",
-      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit."
+      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit. Details: {error}",
+      "api_error": "UniFi Access antwoordt, maar geeft een fout. Controleer de rechten van het token. Details: {error}"
     }
   },
   "options": {
@@ -153,10 +154,11 @@
       "no_name": "Geef de regel een naam.",
       "no_days": "Kies minstens één dag.",
       "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde.",
-      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
-      "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
+      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten. Details: {error}",
+      "cannot_connect": "Home Assistant krijgt geen verbinding met UniFi Access op poort 12445. Controleer of Home Assistant de console kan bereiken (VLAN of firewall). Details: {error}",
       "no_doors": "Geen deuren gevonden in UniFi Access.",
-      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit."
+      "invalid_cert": "Het certificaat van je console wordt niet vertrouwd. Zet 'Certificaat controleren' uit. Details: {error}",
+      "api_error": "UniFi Access antwoordt, maar geeft een fout. Controleer de rechten van het token. Details: {error}"
     }
   },
   "selector": {
