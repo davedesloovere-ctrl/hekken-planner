@@ -71,3 +71,15 @@ def test_normalize_settings():
                                   "presence_entities": ["person.dave"], "notify_service": " notify.x "})
     assert s == {"travel_time": 30, "retries": 1, "retry_delay": 5.0, "presence_entities": ["person.dave"],
                  "notify_service": "notify.x", "sensor_inverted": False}
+
+
+def test_frontend_imports_current_version():
+    """De import van hekken-common.js draagt de versie, zodat de browser na een update niet de oude laadt."""
+    import json
+    import re
+
+    base = Path(__file__).parent.parent / "custom_components" / "hekken"
+    version = json.loads((base / "manifest.json").read_text(encoding="utf-8"))["version"]
+    for name in ("hekken-panel.js", "hekken-card.js"):
+        js = (base / "frontend" / name).read_text(encoding="utf-8")
+        assert re.findall(r'hekken-common\.js\?v=([\d.]+)"', js) == [version], name

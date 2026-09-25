@@ -78,26 +78,18 @@ Bij een storing vuurt ook het event `hekken_failed` af, voor je eigen automatisa
 
 ## Dashboardkaart
 
-Pas de entity-ids aan als ze bij jou anders heten.
+De integratie brengt een eigen kaart mee. Open je dashboard, klik op **Dashboard bewerken →
+Kaart toevoegen** en kies **Hekken**. Je hoeft geen entiteiten op te zoeken: de kaart haalt
+alles uit de Hekkenplanner. Heb je meer dan één poort, dan kies je ze in de editor van de kaart.
+
+De kaart toont een dubbele draaipoort in de echte stand (dicht, open, bezig), met open en
+dicht, het aftellen tot automatisch sluiten, en bij een storing rode vleugels met de knop
+*Storing resetten*.
+
+In YAML:
 
 ```yaml
-type: vertical-stack
-cards:
-  - type: tile
-    entity: cover.hekken
-    features:
-      - type: cover-open-close
-  - type: entities
-    entities:
-      - entity: binary_sensor.hekken_storing
-      - entity: button.hekken_storing_resetten
-      - entity: switch.hekken_automatisch
-      - entity: sensor.hekken_sluit_automatisch_om
-      - entity: sensor.hekken_actieve_regel
-      - entity: sensor.hekken_laatste_actie
-      - type: section
-        label: Regels
-      - entity: switch.hekken_regel_overdag
+type: custom:hekken-card
 ```
 
 ## Goed om te weten
