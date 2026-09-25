@@ -18,7 +18,7 @@ X minuten, en uitzonderingen als er iemand thuis is.
   enkele puls meer** gestuurd, niet door regels, niet door automatisch sluiten en niet via
   de open/dicht-knoppen, tot je op *Storing resetten* drukt. De storing blijft staan na
   een herstart van Home Assistant.
-- **Noodrem.** Meer dan 6 pulsen binnen 10 minuten, om welke reden ook, geeft ook een storing.
+- **Noodrem.** Zijn er al 6 pulsen gestuurd in 10 minuten, dan komt er geen zevende maar een storing, om welke reden ook.
 - **Regels** met dagen en een tijdsvenster. Per regel kies je:
   - automatisch sluiten na X minuten open,
   - niet sluiten als iemand thuis is,
