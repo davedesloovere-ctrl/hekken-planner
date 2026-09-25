@@ -1,3 +1,5 @@
+<img src="https://raw.githubusercontent.com/davedesloovere-ctrl/hekken-planner/main/custom_components/hekken/brand/logo@2x.png" alt="Hekkenplanner" height="96">
+
 # Hekkenplanner
 
 Home Assistant-integratie voor een hekken dat je enkel met een wisselpuls kunt sturen

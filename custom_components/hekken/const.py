@@ -3,7 +3,7 @@
 from .rules import DAYS  # noqa: F401
 
 DOMAIN = "hekken"
-VERSION = "0.2.0"
+VERSION = "0.2.1"
 
 CONF_RELAY_TYPE = "relay_type"
 RELAY_UNIFI = "unifi"
