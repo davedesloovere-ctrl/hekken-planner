@@ -1,28 +1,46 @@
 // Hekken-kaart voor dashboards. De integratie laadt dit bestand zelf in;
 // de kaart haalt hekken, entiteiten en aanwezigheid uit de Hekkenplanner.
 
-import { GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, tr } from "./hekken-common.js?v=0.2.5";
+import { DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.6";
 
 const CSS = `
 :host { ${TOKENS_CSS} display: block; }
 ${SHARED_CSS}
-ha-card { padding: 16px; overflow: hidden; color: var(--hk-text); }
+ha-card {
+  --hk-state: var(--hk-ok);
+  display: block; padding: 16px; overflow: hidden; color: var(--hk-text); height: 100%; box-sizing: border-box;
+  background:
+    radial-gradient(130% 70% at 0% 0%, color-mix(in srgb, var(--hk-state) 13%, transparent), transparent 70%),
+    var(--ha-card-background, var(--card-background-color, #fff));
+  transition: background .6s;
+}
+ha-card.is-open, ha-card.is-opening { --hk-state: var(--hk-accent); }
+ha-card.is-closing { --hk-state: var(--hk-warn); }
+ha-card.is-fault, ha-card.is-unavailable { --hk-state: var(--hk-bad); }
+.gc { container-type: inline-size; }
 .top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.top .name { font-weight: 600; font-size: 16px; flex: 1; }
+.top .name { font-weight: 600; font-size: 16px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top a { color: var(--hk-muted); display: inline-flex; padding: 4px; border-radius: 8px; cursor: pointer; }
 .top a:hover { color: var(--hk-accent); }
-.hero { display: block; container-type: inline-size; position: relative; }
-.body { display: grid; gap: 12px; grid-template-columns: 1fr; align-items: center; }
+.body { display: grid; gap: 8px; grid-template-columns: 1fr; align-items: center; }
 @container (min-width: 380px) { .body { grid-template-columns: 170px 1fr; } }
 .gate-svg { max-width: 220px; }
-.status { font-size: 26px; }
+.status { font-size: 26px; padding-left: 6px; }
+.sub { padding-left: 6px; min-height: 0; }
 .actions { margin-top: 12px; }
 .actions .btn { flex: 1; justify-content: center; padding: 11px 14px; }
 .chips { margin-top: 12px; }
+.chips:empty { display: none; }
 .fault { margin-top: 12px; padding: 12px; border-radius: 12px; }
 .fault .txt { min-width: 0; font-size: 13px; }
 .fault .btn { padding: 8px 12px; font-size: 13px; }
-.hero::before { border-radius: var(--hk-radius); }
+.today { margin-top: 14px; }
+.today .lbl { display: flex; justify-content: space-between; font-size: 11px; color: var(--hk-muted); margin-bottom: 4px; }
+.today .track { position: relative; height: 14px; border-radius: 7px; background: var(--hk-soft); overflow: hidden; }
+.today .bar { position: absolute; top: 3px; bottom: 3px; border-radius: 4px; background: var(--hk-accent); opacity: .75; }
+.today .bar.off { opacity: .25; }
+.today .now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--hk-bad); }
+.last { margin-top: 12px; font-size: 12px; color: var(--hk-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .msg { color: var(--hk-muted); padding: 8px 0; }
 `;
 
@@ -36,7 +54,7 @@ class HekkenCard extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = { show_chips: true, ...config };
+    this._config = { show_chips: true, show_today: true, show_last: true, ...config };
     this._sig = "";
     if (this._hass) this._load();
   }
@@ -59,10 +77,12 @@ class HekkenCard extends HTMLElement {
 
   connectedCallback() {
     this._tick = setInterval(() => this._countdown(), 1000);
+    this._minute = setInterval(() => { this._sig = ""; this._update(); }, 60000);
   }
 
   disconnectedCallback() {
     clearInterval(this._tick);
+    clearInterval(this._minute);
   }
 
   t(key, vars) {
@@ -95,7 +115,7 @@ class HekkenCard extends HTMLElement {
     }
     const e = this._entry;
     card.innerHTML = `
-      <div class="hero">
+      <div class="gc">
         <div class="top">
           <span class="name">${esc(this._config.name || e.title)}</span>
           <a data-open title="${this.t("week")}">${svg("cal")}</a>
@@ -113,6 +133,8 @@ class HekkenCard extends HTMLElement {
         </div>
         <div class="fault-slot"></div>
         <div class="chips"></div>
+        ${this._config.show_today ? `<div class="today"></div>` : ""}
+        ${this._config.show_last ? `<div class="last"></div>` : ""}
       </div>`;
     card.querySelector('[data-act="open"]').addEventListener("click", () => this._call("cover", "open_cover", e.entities.cover));
     card.querySelector('[data-act="close"]').addEventListener("click", () => this._call("cover", "close_cover", e.entities.cover));
@@ -127,15 +149,15 @@ class HekkenCard extends HTMLElement {
   _update() {
     const e = this._entry;
     const card = this.shadowRoot?.querySelector("ha-card");
-    if (!e || !card?.querySelector(".hero")) return;
+    if (!e || !card?.querySelector(".gc")) return;
     const watch = [e.entities.cover, e.entities.fault, e.entities.automatic, e.entities.auto_close_at,
-      e.entities.active_rule, ...e.settings.presence_entities];
+      e.entities.active_rule, e.entities.last_action, ...Object.values(e.entities.rules || {}), ...e.settings.presence_entities];
     const sig = watch.map((id) => this._hass.states[id]?.state ?? "-").join("|");
     if (sig === this._sig) return;
     this._sig = sig;
 
     const v = gateView(this._hass, e);
-    card.querySelector(".hero").className = `hero is-${v.state} pos-${v.pos}`;
+    card.className = `is-${v.state} pos-${v.pos}`;
     card.querySelector(".label").textContent = this.t(v.state);
     const blocked = v.inFault || v.state === "unavailable";
     card.querySelector('[data-act="open"]').disabled = blocked || ["open", "opening"].includes(v.state);
@@ -154,6 +176,9 @@ class HekkenCard extends HTMLElement {
       slot.innerHTML = "";
     }
 
+    this._renderToday(card);
+    this._renderLast(card);
+
     const chips = card.querySelector(".chips");
     if (!this._config.show_chips) {
       chips.innerHTML = "";
@@ -167,6 +192,43 @@ class HekkenCard extends HTMLElement {
       ${v.hasActive ? `<span class="chip on">${svg("cal")}${esc(v.active)}</span>` : ""}`;
     chips.querySelector("[data-auto]").addEventListener("click", () =>
       this._call("switch", v.autoOn ? "turn_off" : "turn_on", e.entities.automatic));
+  }
+
+  // Tijdlijn van vandaag: welke regels gelden er, en waar staan we nu.
+  _renderToday(card) {
+    const box = card.querySelector(".today");
+    if (!box) return;
+    const e = this._entry;
+    const now = new Date();
+    const today = DAYS[(now.getDay() + 6) % 7];
+    const yesterday = DAYS[(now.getDay() + 5) % 7];
+    const bars = [];
+    for (const r of e.rules) {
+      const on = this._hass.states[e.entities.rules?.[r.id]]?.state !== "off";
+      const a = toMin(r.start), b = toMin(r.end);
+      const add = (x, y) => bars.push(`<div class="bar ${on ? "" : "off"}" title="${esc(r.name)}" style="left:${(x / 1440) * 100}%;width:${((y - x) / 1440) * 100}%"></div>`);
+      if (a === b) { if (r.days.includes(today)) add(0, 1440); }
+      else if (a < b) { if (r.days.includes(today)) add(a, b); }
+      else {
+        if (r.days.includes(today)) add(a, 1440);
+        if (r.days.includes(yesterday)) add(0, b);
+      }
+    }
+    const pct = ((now.getHours() * 60 + now.getMinutes()) / 1440) * 100;
+    box.innerHTML = `
+      <div class="lbl"><span>${this.t("today")}</span><span>00 · 06 · 12 · 18 · 24</span></div>
+      <div class="track">${bars.join("")}<div class="now" style="left:${pct}%"></div></div>`;
+  }
+
+  _renderLast(card) {
+    const box = card.querySelector(".last");
+    if (!box) return;
+    const s = this._hass.states[this._entry.entities.last_action];
+    if (!s || ["unknown", "unavailable"].includes(s.state)) { box.textContent = ""; return; }
+    const at = s.attributes?.tijdstip ? new Date(s.attributes.tijdstip) : null;
+    const when = at && !isNaN(at) ? ` · ${at.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "";
+    box.textContent = `${this.t("last_action")}: ${s.state}${when}`;
+    box.title = box.textContent;
   }
 
   _countdown() {
@@ -225,13 +287,15 @@ class HekkenCardEditor extends HTMLElement {
           <input type="text" data-k="name" value="${esc(this._config.name || "")}" placeholder="${esc(entries[0]?.title || "")}">
         </label>
         <label class="row"><input type="checkbox" data-k="show_chips" ${this._config.show_chips === false ? "" : "checked"}>${t("card_chips")}</label>
+        <label class="row"><input type="checkbox" data-k="show_today" ${this._config.show_today === false ? "" : "checked"}>${t("card_today")}</label>
+        <label class="row"><input type="checkbox" data-k="show_last" ${this._config.show_last === false ? "" : "checked"}>${t("card_last")}</label>
       </div>`;
     this.querySelectorAll("[data-k]").forEach((el) =>
       el.addEventListener("change", () => {
         const k = el.dataset.k;
         const value = el.type === "checkbox" ? el.checked : el.value;
         const config = { ...this._config, [k]: value };
-        if (value === "" || (k === "show_chips" && value === true)) delete config[k];
+        if (value === "" || (k.startsWith("show_") && value === true)) delete config[k];
         this._config = config;
         this.dispatchEvent(new CustomEvent("config-changed", { detail: { config }, bubbles: true, composed: true }));
       }));

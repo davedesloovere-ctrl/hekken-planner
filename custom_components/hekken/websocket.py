@@ -14,7 +14,7 @@ import voluptuous as vol
 from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from .const import (
     CONF_NOTIFY,
@@ -52,6 +52,9 @@ def _loaded_entries(hass: HomeAssistant) -> list[ConfigEntry]:
 
 def _entry_payload(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     reg = er.async_get(hass)
+    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, entry.entry_id)})
+    # Hernoem je het apparaat in Home Assistant ("Poort"), dan tonen pagina en kaart die naam.
+    name = (device.name_by_user or device.name) if device else entry.title
     ctrl = entry.runtime_data
     cfg = {**entry.data, **entry.options}
 
@@ -67,7 +70,7 @@ def _entry_payload(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
     rules = list(entry.options.get(CONF_RULES, []))
     return {
         "entry_id": entry.entry_id,
-        "title": entry.title,
+        "title": name or entry.title,
         "connection": connection,
         "settings": {
             "sensor_entity": cfg.get(CONF_SENSOR),

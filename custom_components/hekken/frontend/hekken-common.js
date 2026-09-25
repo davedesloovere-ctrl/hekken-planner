@@ -45,6 +45,7 @@ export const STR = {
     sum_auto: "sluit na {m} min", sum_home: "niet als iemand thuis is", sum_open: "open bij begin", sum_close: "dicht bij einde",
     now: "nu",
     pos_open: "Poort staat open", pos_closed: "Poort staat dicht", pos_unknown: "Stand onbekend",
+    today: "Vandaag", card_today: "Tijdlijn van vandaag tonen", card_last: "Laatste actie tonen",
     gate: "Poort", card_name: "Naam op de kaart", card_chips: "Chips tonen (automatisch, thuis, regel)",
   },
   en: {
@@ -88,6 +89,7 @@ export const STR = {
     sum_auto: "closes after {m} min", sum_home: "not when someone is home", sum_open: "opens at start", sum_close: "closes at end",
     now: "now",
     pos_open: "Gate is open", pos_closed: "Gate is closed", pos_unknown: "Position unknown",
+    today: "Today", card_today: "Show today's timeline", card_last: "Show last action",
     gate: "Gate", card_name: "Name on the card", card_chips: "Show chips (automatic, home, rule)",
   },
 };

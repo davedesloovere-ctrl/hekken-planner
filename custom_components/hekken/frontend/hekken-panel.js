@@ -1,7 +1,7 @@
 // Hekkenplanner: de pagina in de zijbalk van Home Assistant.
 // Geen build-stap, geen externe bibliotheken; gedeelde stukken in hekken-common.js.
 
-import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, hhmm, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.5";
+import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, hhmm, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.6";
 
 const CSS = `
 :host {
