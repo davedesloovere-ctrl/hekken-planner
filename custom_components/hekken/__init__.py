@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 
 from .controller import GateController
 
-PLATFORMS = [Platform.COVER, Platform.SWITCH, Platform.SENSOR]
+PLATFORMS = [
+    Platform.BINARY_SENSOR,
+    Platform.BUTTON,
+    Platform.COVER,
+    Platform.SENSOR,
+    Platform.SWITCH,
+]
 
 type HekkenConfigEntry = ConfigEntry[GateController]
 

@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.cover import CoverDeviceClass, CoverEntity, CoverEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .controller import CLOSING, OPENING
@@ -49,10 +50,20 @@ class HekkenCover(HekkenEntity, CoverEntity):
         return {
             "automatisch_sluiten_om": self.ctrl.auto_close_at,
             "iemand_thuis": self.ctrl.anyone_home(),
+            "storing": self.ctrl.fault,
         }
 
     async def async_open_cover(self, **kwargs: Any) -> None:
+        self._check_fault()
         self.ctrl.request(True, "Handmatig geopend")
 
     async def async_close_cover(self, **kwargs: Any) -> None:
+        self._check_fault()
         self.ctrl.request(False, "Handmatig gesloten")
+
+    def _check_fault(self) -> None:
+        if self.ctrl.fault:
+            raise HomeAssistantError(
+                f"{self.ctrl.entry.title} staat in storing ({self.ctrl.fault}). "
+                "Kijk het hekken na en druk dan op 'Storing resetten'."
+            )

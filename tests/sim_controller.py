@@ -27,7 +27,7 @@ async def main():
             "start":"00:00:00","end":"00:00:00","auto_close":True,"auto_close_minutes":0.05,
             "skip_when_home":True,"open_at_start":False,"close_at_end":False}
     entry = SimpleNamespace(entry_id="e1", title="Hekken",
-        data={"relay_entity":"button.hek","sensor_entity":"binary_sensor.strip","travel_time":1,"retries":1,
+        data={"relay_entity":"button.hek","sensor_entity":"binary_sensor.strip","travel_time":1,"retries":1,"retry_delay":0.05,
               "presence_entities":["person.dave"],"notify_service":""},
         options={"rules":[rule]})
     c = GateController(hass, entry)
@@ -50,13 +50,34 @@ async def main():
     await asyncio.sleep(5)
     assert not gate["open"] and len(pulses) == 2, (gate, pulses)
     print("laatste actie:", c.last_action)
-    # 6. hekken reageert niet: 2 pogingen, dan melding
-    hass.services.async_remove("button","press")
-    async def dead(call): pulses.append("dood")
-    hass.services.async_register("button","press",dead)
-    c.request(True, "test"); await asyncio.sleep(25)
-    assert pulses.count("dood") == 2, pulses
-    print("na falen:", c.last_action)
+    # 6. Jouw scenario: hekken staat open, reageert niet meer op sluiten.
+    c.request(True, "test"); await asyncio.sleep(1)
+    assert gate["open"]
+    hass.services.async_remove("button", "press")
+    dead = []
+    async def dead_press(call): dead.append(1)
+    hass.services.async_register("button", "press", dead_press)
+    # auto-sluiten (3s) -> puls 1 -> wacht -> puls 2 -> wacht -> storing
+    await asyncio.sleep(3 + 1 + 11 + 11 + 2)
+    assert len(dead) == 2, dead
+    assert c.fault, "moet in storing staan"
+    assert c.auto_close_at is None, "geen nieuwe auto-sluit-teller in storing"
+    print("storing:", c.fault)
+    # 7. In storing: niets meer sturen, ook niet na nog eens de auto-sluit-tijd
+    assert c.request(False, "handmatig") is False
+    await asyncio.sleep(6)
+    assert len(dead) == 2, dead
+    # 8. Reset: de teller start opnieuw (hekken staat nog open binnen de regel)
+    c.clear_fault()
+    assert c.fault is None and c.auto_close_at is not None
+    # 9. Noodrem: te veel pulsen op korte tijd
+    c.set_auto_enabled(False)
+    from custom_components.hekken import controller as ctl
+    now = __import__("homeassistant.util.dt", fromlist=["x"]).utcnow()
+    c._pulse_times.extend([now] * ctl.MAX_PULSES)
+    c.request(False, "test"); await asyncio.sleep(2.5)
+    assert c.fault and "pulsen" in c.fault and len(dead) == 2, (c.fault, dead)
+    print("noodrem:", c.fault)
     c.async_stop(); await hass.async_stop()
     print("ALLES OK")
 asyncio.run(main())

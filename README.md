@@ -11,8 +11,14 @@ X minuten, en uitzonderingen als er iemand thuis is.
 
 - **Open en dicht in plaats van een wisselpuls.** Vraag je "dicht" terwijl het al dicht is,
   dan gebeurt er niets. Er wordt nooit gepulst terwijl het hekken nog loopt.
-- **Controle.** Na een puls wacht de planner op de sensor. Geen reactie? Dan nog eens
-  proberen, en daarna een melding in Home Assistant (en op je gsm als je dat instelt).
+- **Controle.** Na een puls volgt de planner de sensor. Geen reactie? Dan wacht hij de
+  ingestelde tijd (standaard 5 minuten) en pulst hij nog één keer.
+- **Storing in plaats van blijven sturen.** Staat het hekken na de laatste poging nog
+  altijd niet goed, dan gaat het in storing: je krijgt een melding en er wordt **geen
+  enkele puls meer** gestuurd, niet door regels, niet door automatisch sluiten en niet via
+  de open/dicht-knoppen, tot je op *Storing resetten* drukt. De storing blijft staan na
+  een herstart van Home Assistant.
+- **Noodrem.** Meer dan 6 pulsen binnen 10 minuten, om welke reden ook, geeft ook een storing.
 - **Regels** met dagen en een tijdsvenster. Per regel kies je:
   - automatisch sluiten na X minuten open,
   - niet sluiten als iemand thuis is,
@@ -54,8 +60,10 @@ Regels beheer je via **Hekkenplanner → Configureren**.
 | `sensor.hekken_sluit_automatisch_om` | Wanneer het vanzelf sluit |
 | `sensor.hekken_actieve_regel` | Welke regel nu geldt |
 | `sensor.hekken_laatste_actie` | Wat er laatst gebeurde en waarom |
+| `binary_sensor.hekken_storing` | Aan als het hekken in storing staat, met reden en tijdstip |
+| `button.hekken_storing_resetten` | Storing wissen nadat je het hekken hebt nagekeken |
 
-Mislukt een beweging, dan vuurt ook het event `hekken_failed` af, voor je eigen automatisaties.
+Bij een storing vuurt ook het event `hekken_failed` af, voor je eigen automatisaties.
 
 ## Dashboardkaart
 
@@ -70,6 +78,8 @@ cards:
       - type: cover-open-close
   - type: entities
     entities:
+      - entity: binary_sensor.hekken_storing
+      - entity: button.hekken_storing_resetten
       - entity: switch.hekken_automatisch
       - entity: sensor.hekken_sluit_automatisch_om
       - entity: sensor.hekken_actieve_regel

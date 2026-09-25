@@ -30,12 +30,14 @@ from .const import (
     CONF_PRESENCE,
     CONF_RELAY,
     CONF_RETRIES,
+    CONF_RETRY_DELAY,
     CONF_RULES,
     CONF_SENSOR,
     CONF_SENSOR_INVERTED,
     CONF_TRAVEL_TIME,
     DAYS,
     DEFAULT_RETRIES,
+    DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
     DOMAIN,
     PRESENCE_DOMAINS,
@@ -71,6 +73,9 @@ def _settings_schema(d: dict[str, Any]) -> dict:
         vol.Required(CONF_RETRIES, default=d.get(CONF_RETRIES, DEFAULT_RETRIES)): NumberSelector(
             NumberSelectorConfig(min=0, max=3, step=1, mode=NumberSelectorMode.SLIDER)
         ),
+        vol.Required(CONF_RETRY_DELAY, default=d.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY)): NumberSelector(
+            NumberSelectorConfig(min=1, max=60, step=0.5, unit_of_measurement="min", mode=NumberSelectorMode.BOX)
+        ),
         vol.Optional(CONF_PRESENCE, description={"suggested_value": d.get(CONF_PRESENCE)}): EntitySelector(
             EntitySelectorConfig(domain=PRESENCE_DOMAINS, multiple=True)
         ),
@@ -85,6 +90,7 @@ def _clean_settings(user_input: dict[str, Any]) -> dict[str, Any]:
     out[CONF_NOTIFY] = user_input.get(CONF_NOTIFY, "")
     out[CONF_TRAVEL_TIME] = int(user_input[CONF_TRAVEL_TIME])
     out[CONF_RETRIES] = int(user_input[CONF_RETRIES])
+    out[CONF_RETRY_DELAY] = float(user_input[CONF_RETRY_DELAY])
     return out
 
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from collections.abc import Callable
 from datetime import datetime, timedelta
 import logging
@@ -23,13 +24,17 @@ from .const import (
     CONF_PRESENCE,
     CONF_RELAY,
     CONF_RETRIES,
+    CONF_RETRY_DELAY,
     CONF_RULES,
     CONF_SENSOR,
     CONF_SENSOR_INVERTED,
     CONF_TRAVEL_TIME,
     DEFAULT_RETRIES,
+    DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
     EVENT_FAILED,
+    MAX_PULSES,
+    MAX_PULSES_WINDOW,
     R_AUTO_CLOSE,
     R_AUTO_CLOSE_MIN,
     R_CLOSE_AT_END,
@@ -58,6 +63,7 @@ class GateController:
         self.inverted: bool = bool(cfg.get(CONF_SENSOR_INVERTED, False))
         self.travel_time: int = int(cfg.get(CONF_TRAVEL_TIME, DEFAULT_TRAVEL_TIME))
         self.retries: int = int(cfg.get(CONF_RETRIES, DEFAULT_RETRIES))
+        self.retry_delay: float = float(cfg.get(CONF_RETRY_DELAY, DEFAULT_RETRY_DELAY))
         self.presence: list[str] = list(cfg.get(CONF_PRESENCE) or [])
         self.notify: str = (cfg.get(CONF_NOTIFY) or "").strip()
         self.rules: list[dict] = list(entry.options.get(CONF_RULES, []))
@@ -68,6 +74,11 @@ class GateController:
         self.auto_close_at: datetime | None = None
         self.last_action: str | None = None
         self.last_action_at: datetime | None = None
+        # Storing: zolang dit gezet is, stuurt de planner geen enkele puls meer.
+        self.fault: str | None = None
+        self.fault_since: datetime | None = None
+
+        self._pulse_times: deque[datetime] = deque()
 
         self._in_window: set[str] = set()
         self._last_change: datetime | None = None
@@ -205,7 +216,7 @@ class GateController:
     # --- automatisch sluiten --------------------------------------------
 
     def _auto_close_minutes(self) -> float | None:
-        if not self.auto_enabled or self.is_open is not True or self.motion == CLOSING:
+        if self.fault or not self.auto_enabled or self.is_open is not True or self.motion == CLOSING:
             return None
         home = self.anyone_home()
         minutes = [
@@ -247,14 +258,63 @@ class GateController:
     # --- bewegen --------------------------------------------------------
 
     @callback
-    def request(self, want_open: bool, reason: str) -> None:
-        """Vraag een stand. Een lopende opdracht wordt vervangen."""
+    def request(self, want_open: bool, reason: str) -> bool:
+        """Vraag een stand. Een lopende opdracht wordt vervangen.
+
+        Geeft False als de planner in storing staat; dan gebeurt er niets.
+        """
+        if self.fault:
+            self._set_last_action(f"{reason}: niet uitgevoerd, hekken staat in storing")
+            self._notify_listeners()
+            return False
         if self._task and not self._task.done():
             self._task.cancel()
         self._set_last_action(reason)
         self._task = self.hass.async_create_background_task(
             self._move(want_open), f"{self.entry.entry_id}_move"
         )
+        return True
+
+    # --- storing --------------------------------------------------------
+
+    @callback
+    def set_fault(self, reason: str, since: datetime | None = None) -> None:
+        """Zet de storing zonder melding, bv. bij het herstellen na een herstart."""
+        self.fault = reason
+        self.fault_since = since or dt_util.utcnow()
+        if self._task and not self._task.done():
+            self._task.cancel()
+        self._cancel_auto_close()
+        self._notify_listeners()
+
+    @callback
+    def clear_fault(self) -> None:
+        if not self.fault:
+            return
+        self.fault = None
+        self.fault_since = None
+        self._pulse_times.clear()
+        persistent_notification.async_dismiss(self.hass, f"{self.entry.entry_id}_failed")
+        self._set_last_action("Storing gereset")
+        self._update_auto_close()
+        self._notify_listeners()
+
+    async def _enter_fault(self, want_open: bool, why: str) -> None:
+        word = "open" if want_open else "dicht"
+        self.fault = f"Niet {word} gegaan: {why}"
+        self.fault_since = dt_util.utcnow()
+        self._cancel_auto_close()
+        await self._alert(
+            f"{self.entry.title} staat in storing: niet {word} gegaan, {why}. "
+            "Er worden geen pulsen meer gestuurd tot je de storing reset.",
+            wanted=word, reason=why,
+        )
+
+    def _too_many_pulses(self) -> bool:
+        cutoff = dt_util.utcnow() - timedelta(seconds=MAX_PULSES_WINDOW)
+        while self._pulse_times and self._pulse_times[0] < cutoff:
+            self._pulse_times.popleft()
+        return len(self._pulse_times) >= MAX_PULSES
 
     @callback
     def _set_last_action(self, text: str) -> None:
@@ -267,23 +327,38 @@ class GateController:
         self.motion = OPENING if want_open else CLOSING
         self._update_auto_close()
         self._notify_listeners()
+        attempts = self.retries + 1
         try:
-            for _attempt in range(self.retries + 1):
+            for attempt in range(attempts):
                 current = self.is_open
                 if current is None:
-                    await self._report_failure(want_open, "de positiesensor is onbeschikbaar")
+                    # Geen storing: zonder sensor pulsen we gewoon niet.
+                    await self._alert(
+                        f"{self.entry.title}: de positiesensor is onbeschikbaar, er is niets gestuurd.",
+                        wanted="open" if want_open else "dicht", reason="sensor onbeschikbaar",
+                    )
                     return
                 if current == want_open:
                     return
                 await self._wait_until_settled()
-                if self.is_open == want_open:
+                if self.is_open == want_open or self.fault:
+                    return
+                if self._too_many_pulses():
+                    await self._enter_fault(
+                        want_open,
+                        f"al {MAX_PULSES} pulsen in {MAX_PULSES_WINDOW // 60} minuten",
+                    )
                     return
                 await self._pulse()
-                if await self._wait_for(want_open):
+                # Tussen twee pogingen blijven we de sensor volgen: gaat het hekken
+                # alsnog in de juiste stand, dan is er geen tweede puls nodig.
+                last = attempt == attempts - 1
+                timeout = self.travel_time + 10
+                if not last:
+                    timeout = max(timeout, self.retry_delay * 60)
+                if await self._wait_for(want_open, timeout):
                     return
-            await self._report_failure(
-                want_open, f"geen reactie na {self.retries + 1} poging(en)"
-            )
+            await self._enter_fault(want_open, f"geen reactie na {attempts} poging(en)")
         finally:
             if self._task is me or self._task is None:
                 self.motion = None
@@ -299,6 +374,7 @@ class GateController:
             await asyncio.sleep(self.travel_time - elapsed)
 
     async def _pulse(self) -> None:
+        self._pulse_times.append(dt_util.utcnow())
         domain = self.relay.split(".", 1)[0]
         target = {"entity_id": self.relay}
         if domain in ("button", "input_button"):
@@ -314,7 +390,7 @@ class GateController:
         else:
             raise ValueError(f"Relais {self.relay} wordt niet ondersteund")
 
-    async def _wait_for(self, want_open: bool) -> bool:
+    async def _wait_for(self, want_open: bool, timeout: float) -> bool:
         if self.is_open == want_open:
             return True
         done: asyncio.Future[bool] = self.hass.loop.create_future()
@@ -326,16 +402,14 @@ class GateController:
 
         unsub = async_track_state_change_event(self.hass, [self.sensor], _changed)
         try:
-            async with asyncio.timeout(self.travel_time + 10):
+            async with asyncio.timeout(timeout):
                 return await done
         except TimeoutError:
             return False
         finally:
             unsub()
 
-    async def _report_failure(self, want_open: bool, why: str) -> None:
-        word = "open" if want_open else "dicht"
-        message = f"{self.entry.title} is niet {word} gegaan: {why}."
+    async def _alert(self, message: str, wanted: str, reason: str) -> None:
         self._set_last_action(message)
         _LOGGER.warning(message)
         persistent_notification.async_create(
@@ -343,7 +417,8 @@ class GateController:
             notification_id=f"{self.entry.entry_id}_failed",
         )
         self.hass.bus.async_fire(
-            EVENT_FAILED, {"entry_id": self.entry.entry_id, "wanted": word, "reason": why}
+            EVENT_FAILED,
+            {"entry_id": self.entry.entry_id, "wanted": wanted, "reason": reason, "fault": bool(self.fault)},
         )
         if self.notify:
             domain, _, service = self.notify.partition(".")

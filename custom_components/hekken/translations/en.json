@@ -12,16 +12,18 @@
           "travel_time": "Gate travel time",
           "retries": "Extra attempts",
           "presence_entities": "Who counts as home",
-          "notify_service": "Notify on problems"
+          "notify_service": "Notify on problems",
+          "retry_delay": "Time until next attempt"
         },
         "data_description": {
           "relay_entity": "The UniFi Access button, switch, lock or script that moves the gate.",
           "sensor_entity": "Your Sensative strip. By default 'on' means the gate is open.",
           "sensor_inverted": "Tick if the sensor reports 'on' when the gate is closed.",
           "travel_time": "How long the gate takes to fully open or close. No new pulse is sent within this time, otherwise the gate stops or reverses.",
-          "retries": "How many times to pulse again when the gate does not reach the requested position.",
+          "retries": "How many extra pulses before the gate goes into fault. 1 means: one pulse, one more after the wait, then fault.",
           "presence_entities": "Persons, phones or the Home zone. If anyone is home, rules with 'not when someone is home' skip closing.",
-          "notify_service": "Optional, e.g. notify.mobile_app_phone. Leave empty for a Home Assistant notification only."
+          "notify_service": "Optional, e.g. notify.mobile_app_phone. Leave empty for a Home Assistant notification only.",
+          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it."
         }
       }
     },
@@ -43,12 +45,16 @@
       },
       "edit_rule": {
         "title": "Which rule?",
-        "data": { "rule": "Rule" }
+        "data": {
+          "rule": "Rule"
+        }
       },
       "delete_rule": {
         "title": "Delete rules",
         "description": "Tick the rules to remove.",
-        "data": { "rule": "Rules" }
+        "data": {
+          "rule": "Rules"
+        }
       },
       "rule": {
         "title": "Rule",
@@ -78,7 +84,13 @@
           "travel_time": "Gate travel time",
           "retries": "Extra attempts",
           "presence_entities": "Who counts as home",
-          "notify_service": "Notify on problems"
+          "notify_service": "Notify on problems",
+          "retry_delay": "Time until next attempt"
+        },
+        "data_description": {
+          "travel_time": "How long the gate takes to fully open or close. No new pulse is sent within this time, otherwise the gate stops or reverses.",
+          "retries": "How many extra pulses before the gate goes into fault. 1 means: one pulse, one more after the wait, then fault.",
+          "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it."
         }
       }
     },
@@ -103,12 +115,30 @@
   },
   "entity": {
     "switch": {
-      "automatic": { "name": "Automatic" }
+      "automatic": {
+        "name": "Automatic"
+      }
     },
     "sensor": {
-      "auto_close_at": { "name": "Closes automatically at" },
-      "active_rule": { "name": "Active rule" },
-      "last_action": { "name": "Last action" }
+      "auto_close_at": {
+        "name": "Closes automatically at"
+      },
+      "active_rule": {
+        "name": "Active rule"
+      },
+      "last_action": {
+        "name": "Last action"
+      }
+    },
+    "binary_sensor": {
+      "fault": {
+        "name": "Fault"
+      }
+    },
+    "button": {
+      "reset_fault": {
+        "name": "Reset fault"
+      }
     }
   }
 }

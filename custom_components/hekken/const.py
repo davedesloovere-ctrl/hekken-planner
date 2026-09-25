@@ -9,6 +9,7 @@ CONF_SENSOR = "sensor_entity"
 CONF_SENSOR_INVERTED = "sensor_inverted"
 CONF_TRAVEL_TIME = "travel_time"
 CONF_RETRIES = "retries"
+CONF_RETRY_DELAY = "retry_delay"
 CONF_PRESENCE = "presence_entities"
 CONF_NOTIFY = "notify_service"
 CONF_RULES = "rules"
@@ -26,6 +27,12 @@ R_SKIP_HOME = "skip_when_home"
 
 DEFAULT_TRAVEL_TIME = 30
 DEFAULT_RETRIES = 1
+DEFAULT_RETRY_DELAY = 5  # minuten tussen twee pogingen
+
+# Noodrem: zoveel pulsen binnen dit venster en de planner gaat in storing,
+# wat er ook om vraagt.
+MAX_PULSES = 6
+MAX_PULSES_WINDOW = 600  # seconden
 
 RELAY_DOMAINS = ["button", "input_button", "switch", "lock", "script"]
 PRESENCE_DOMAINS = ["person", "device_tracker", "binary_sensor", "input_boolean", "group", "zone"]

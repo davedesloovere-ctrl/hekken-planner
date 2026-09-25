@@ -12,16 +12,18 @@
           "travel_time": "Looptijd van het hekken",
           "retries": "Extra pogingen",
           "presence_entities": "Wie telt als thuis",
-          "notify_service": "Melding bij problemen"
+          "notify_service": "Melding bij problemen",
+          "retry_delay": "Tijd tot volgende poging"
         },
         "data_description": {
           "relay_entity": "De knop, schakelaar, slot of script van UniFi Access die het hekken laat bewegen.",
           "sensor_entity": "Je Sensative strip. Standaard betekent 'aan' dat het hekken open staat.",
           "sensor_inverted": "Aanvinken als de sensor 'aan' geeft wanneer het hekken dicht is.",
           "travel_time": "Hoe lang het hekken nodig heeft om volledig open of dicht te gaan. Binnen deze tijd stuurt de planner geen nieuwe puls, anders stopt of keert het hekken.",
-          "retries": "Hoe vaak opnieuw pulsen als het hekken niet in de gevraagde stand komt.",
+          "retries": "Hoe vaak opnieuw pulsen voor het hekken in storing gaat. 1 betekent: één puls, na de wachttijd nog één, en dan storing.",
           "presence_entities": "Personen, gsm's of de zone Thuis. Is er één thuis, dan slaan regels met 'niet als iemand thuis is' het sluiten over.",
-          "notify_service": "Optioneel, bv. notify.mobile_app_gsm_dave. Leeg laten voor enkel een melding in Home Assistant."
+          "notify_service": "Optioneel, bv. notify.mobile_app_gsm_dave. Leeg laten voor enkel een melding in Home Assistant.",
+          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset."
         }
       }
     },
@@ -43,12 +45,16 @@
       },
       "edit_rule": {
         "title": "Welke regel?",
-        "data": { "rule": "Regel" }
+        "data": {
+          "rule": "Regel"
+        }
       },
       "delete_rule": {
         "title": "Regels verwijderen",
         "description": "Vink de regels aan die weg mogen.",
-        "data": { "rule": "Regels" }
+        "data": {
+          "rule": "Regels"
+        }
       },
       "rule": {
         "title": "Regel",
@@ -78,7 +84,13 @@
           "travel_time": "Looptijd van het hekken",
           "retries": "Extra pogingen",
           "presence_entities": "Wie telt als thuis",
-          "notify_service": "Melding bij problemen"
+          "notify_service": "Melding bij problemen",
+          "retry_delay": "Tijd tot volgende poging"
+        },
+        "data_description": {
+          "travel_time": "Hoe lang het hekken nodig heeft om volledig open of dicht te gaan. Binnen deze tijd stuurt de planner geen nieuwe puls, anders stopt of keert het hekken.",
+          "retries": "Hoe vaak opnieuw pulsen voor het hekken in storing gaat. 1 betekent: één puls, na de wachttijd nog één, en dan storing.",
+          "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset."
         }
       }
     },
@@ -103,12 +115,30 @@
   },
   "entity": {
     "switch": {
-      "automatic": { "name": "Automatisch" }
+      "automatic": {
+        "name": "Automatisch"
+      }
     },
     "sensor": {
-      "auto_close_at": { "name": "Sluit automatisch om" },
-      "active_rule": { "name": "Actieve regel" },
-      "last_action": { "name": "Laatste actie" }
+      "auto_close_at": {
+        "name": "Sluit automatisch om"
+      },
+      "active_rule": {
+        "name": "Actieve regel"
+      },
+      "last_action": {
+        "name": "Laatste actie"
+      }
+    },
+    "binary_sensor": {
+      "fault": {
+        "name": "Storing"
+      }
+    },
+    "button": {
+      "reset_fault": {
+        "name": "Storing resetten"
+      }
     }
   }
 }
