@@ -66,3 +66,69 @@ def describe(rule: dict) -> str:
         acts.append("niet als iemand thuis is")
 
     return f"{day_txt} {rule['start'][:5]}-{rule['end'][:5]}: {', '.join(acts) or 'geen actie'}"
+
+
+def _time(value: object) -> str:
+    text = str(value).strip()
+    try:
+        t = parse_time(text)
+    except (ValueError, IndexError) as err:
+        raise ValueError(f"ongeldig uur: {text}") from err
+    return t.strftime("%H:%M:%S")
+
+
+def normalize_rule(raw: dict, new_id: str) -> dict:
+    """Controleer een regel uit de interface en zet hem in de vaste vorm."""
+    name = str(raw.get("name", "")).strip()
+    if not name:
+        raise ValueError("een regel heeft een naam nodig")
+    days = [d for d in DAYS if d in (raw.get("days") or [])]
+    if not days:
+        raise ValueError(f"regel {name}: kies minstens één dag")
+    try:
+        minutes = int(raw.get("auto_close_minutes", 15))
+    except (TypeError, ValueError) as err:
+        raise ValueError(f"regel {name}: ongeldig aantal minuten") from err
+    if not 1 <= minutes <= 240:
+        raise ValueError(f"regel {name}: sluiten na 1 tot 240 minuten")
+    rule = {
+        "id": str(raw.get("id") or new_id),
+        "name": name[:60],
+        "days": days,
+        "start": _time(raw.get("start", "08:00")),
+        "end": _time(raw.get("end", "17:00")),
+        "auto_close": bool(raw.get("auto_close")),
+        "auto_close_minutes": minutes,
+        "skip_when_home": bool(raw.get("skip_when_home")),
+        "open_at_start": bool(raw.get("open_at_start")),
+        "close_at_end": bool(raw.get("close_at_end")),
+    }
+    if not (rule["auto_close"] or rule["open_at_start"] or rule["close_at_end"]):
+        raise ValueError(f"regel {name}: kies minstens één actie")
+    return rule
+
+
+def normalize_settings(raw: dict) -> dict:
+    """De instellingen die je op de pagina kan aanpassen, gecontroleerd."""
+
+    def number(key: str, low: float, high: float, cast=int):
+        try:
+            value = cast(raw[key])
+        except (KeyError, TypeError, ValueError) as err:
+            raise ValueError(f"{key} ontbreekt of is ongeldig") from err
+        if not low <= value <= high:
+            raise ValueError(f"{key} moet tussen {low} en {high} liggen")
+        return value
+
+    presence = raw.get("presence_entities") or []
+    if not isinstance(presence, list) or not all(isinstance(e, str) and "." in e for e in presence):
+        raise ValueError("presence_entities moet een lijst entiteiten zijn")
+    notify = str(raw.get("notify_service") or "").strip()
+    return {
+        "travel_time": number("travel_time", 5, 180),
+        "retries": number("retries", 0, 3),
+        "retry_delay": number("retry_delay", 1, 60, float),
+        "presence_entities": presence,
+        "notify_service": notify,
+        "sensor_inverted": bool(raw.get("sensor_inverted")),
+    }

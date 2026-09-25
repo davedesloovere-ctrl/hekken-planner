@@ -23,12 +23,18 @@ from .const import (
     CONF_NOTIFY,
     CONF_PRESENCE,
     CONF_RELAY,
+    CONF_RELAY_TYPE,
     CONF_RETRIES,
     CONF_RETRY_DELAY,
     CONF_RULES,
     CONF_SENSOR,
     CONF_SENSOR_INVERTED,
     CONF_TRAVEL_TIME,
+    CONF_UNIFI_DOOR_ID,
+    CONF_UNIFI_DOOR_NAME,
+    CONF_UNIFI_HOST,
+    CONF_UNIFI_TOKEN,
+    CONF_UNIFI_VERIFY_SSL,
     DEFAULT_RETRIES,
     DEFAULT_RETRY_DELAY,
     DEFAULT_TRAVEL_TIME,
@@ -42,8 +48,10 @@ from .const import (
     R_NAME,
     R_OPEN_AT_START,
     R_SKIP_HOME,
+    RELAY_UNIFI,
 )
 from .rules import rule_active
+from .unifi_access import UnifiAccessClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +66,16 @@ class GateController:
         self.hass = hass
         self.entry = entry
         cfg = {**entry.data, **entry.options}
-        self.relay: str = cfg[CONF_RELAY]
+        self.relay_type: str = cfg.get(CONF_RELAY_TYPE) or "entity"
+        self.relay: str | None = cfg.get(CONF_RELAY)
+        self.door_id: str | None = cfg.get(CONF_UNIFI_DOOR_ID)
+        self.door_name: str | None = cfg.get(CONF_UNIFI_DOOR_NAME)
+        self.unifi_host: str | None = cfg.get(CONF_UNIFI_HOST)
+        self.unifi: UnifiAccessClient | None = None
+        if self.relay_type == RELAY_UNIFI:
+            self.unifi = UnifiAccessClient(
+                hass, cfg[CONF_UNIFI_HOST], cfg[CONF_UNIFI_TOKEN], bool(cfg.get(CONF_UNIFI_VERIFY_SSL, False))
+            )
         self.sensor: str = cfg[CONF_SENSOR]
         self.inverted: bool = bool(cfg.get(CONF_SENSOR_INVERTED, False))
         self.travel_time: int = int(cfg.get(CONF_TRAVEL_TIME, DEFAULT_TRAVEL_TIME))
@@ -328,6 +345,7 @@ class GateController:
         self._update_auto_close()
         self._notify_listeners()
         attempts = self.retries + 1
+        pulse_error: str | None = None
         try:
             for attempt in range(attempts):
                 current = self.is_open
@@ -349,7 +367,13 @@ class GateController:
                         f"al {MAX_PULSES} pulsen in {MAX_PULSES_WINDOW // 60} minuten",
                     )
                     return
-                await self._pulse()
+                try:
+                    await self._pulse()
+                except Exception as err:  # noqa: BLE001 - telt als mislukte poging
+                    # Een fout bij het sturen telt als een poging zonder reactie:
+                    # wachten, eventueel nog eens, en anders storing.
+                    pulse_error = str(err) or type(err).__name__
+                    _LOGGER.warning("Puls naar het hekken mislukt: %s", pulse_error)
                 # Tussen twee pogingen blijven we de sensor volgen: gaat het hekken
                 # alsnog in de juiste stand, dan is er geen tweede puls nodig.
                 last = attempt == attempts - 1
@@ -358,7 +382,10 @@ class GateController:
                     timeout = max(timeout, self.retry_delay * 60)
                 if await self._wait_for(want_open, timeout):
                     return
-            await self._enter_fault(want_open, f"geen reactie na {attempts} poging(en)")
+            why = f"geen reactie na {attempts} poging(en)"
+            if pulse_error:
+                why += f" (laatste fout bij het sturen: {pulse_error})"
+            await self._enter_fault(want_open, why)
         finally:
             if self._task is me or self._task is None:
                 self.motion = None
@@ -375,6 +402,9 @@ class GateController:
 
     async def _pulse(self) -> None:
         self._pulse_times.append(dt_util.utcnow())
+        if self.unifi is not None:
+            await self.unifi.async_unlock(self.door_id)
+            return
         domain = self.relay.split(".", 1)[0]
         target = {"entity_id": self.relay}
         if domain in ("button", "input_button"):

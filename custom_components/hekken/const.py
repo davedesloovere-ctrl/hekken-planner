@@ -3,6 +3,16 @@
 from .rules import DAYS  # noqa: F401
 
 DOMAIN = "hekken"
+VERSION = "0.2.0"
+
+CONF_RELAY_TYPE = "relay_type"
+RELAY_UNIFI = "unifi"
+RELAY_ENTITY = "entity"
+CONF_UNIFI_HOST = "unifi_host"
+CONF_UNIFI_TOKEN = "unifi_token"
+CONF_UNIFI_VERIFY_SSL = "unifi_verify_ssl"
+CONF_UNIFI_DOOR_ID = "unifi_door_id"
+CONF_UNIFI_DOOR_NAME = "unifi_door_name"
 
 CONF_RELAY = "relay_entity"
 CONF_SENSOR = "sensor_entity"

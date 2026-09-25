@@ -2,8 +2,36 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect gate",
-        "description": "Pick the relay that pulses the gate and the sensor that tells whether it is open or closed. An example rule is added after setup: weekdays 08:00-17:00, close after 15 minutes, not when someone is home.",
+        "title": "How is the gate controlled?",
+        "description": "Choose how Home Assistant sends the pulse to your gate.",
+        "menu_options": {
+          "unifi": "Directly via UniFi Access (API token)",
+          "entity": "Via an existing entity (button, switch, lock or script)"
+        }
+      },
+      "unifi": {
+        "title": "Connect UniFi Access",
+        "description": "Create an API token in UniFi Access (Settings → General → Advanced → API Token) with permission to view and unlock doors. The API runs on port 12445 of your console.",
+        "data": {
+          "unifi_host": "UniFi console address",
+          "unifi_token": "API token",
+          "unifi_verify_ssl": "Verify certificate"
+        },
+        "data_description": {
+          "unifi_host": "For example 192.168.1.1. Port 12445 is added automatically.",
+          "unifi_verify_ssl": "Leave off: the console uses a self-signed certificate by default."
+        }
+      },
+      "door": {
+        "title": "Which gate?",
+        "description": "Pick the UniFi Access door that drives your gate.",
+        "data": {
+          "door": "Gate"
+        }
+      },
+      "gate": {
+        "title": "The gate",
+        "description": "Pick the sensor that tells whether the gate is open or closed. An example rule is added, and everything is on the Hekken page in the sidebar.",
         "data": {
           "name": "Name",
           "relay_entity": "Relay (pulse)",
@@ -29,6 +57,11 @@
     },
     "abort": {
       "already_configured": "This sensor already belongs to a gate."
+    },
+    "error": {
+      "invalid_auth": "The API token was rejected. Check the token and its permissions.",
+      "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
+      "no_doors": "No doors found in UniFi Access."
     }
   },
   "options": {
@@ -40,7 +73,8 @@
           "add_rule": "Add rule",
           "edit_rule": "Edit rule",
           "delete_rule": "Delete rule",
-          "settings": "Gate and sensors"
+          "settings": "Gate and sensors",
+          "unifi": "UniFi Access connection"
         }
       },
       "edit_rule": {
@@ -92,12 +126,35 @@
           "retries": "How many extra pulses before the gate goes into fault. 1 means: one pulse, one more after the wait, then fault.",
           "retry_delay": "If the gate does not respond to a pulse, the planner waits this long while watching the sensor. Still wrong after the last attempt? The gate goes into fault and nothing is sent until you reset it."
         }
+      },
+      "unifi": {
+        "title": "Connect UniFi Access",
+        "description": "Create an API token in UniFi Access (Settings → General → Advanced → API Token) with permission to view and unlock doors. The API runs on port 12445 of your console.",
+        "data": {
+          "unifi_host": "UniFi console address",
+          "unifi_token": "API token",
+          "unifi_verify_ssl": "Verify certificate"
+        },
+        "data_description": {
+          "unifi_host": "For example 192.168.1.1. Port 12445 is added automatically.",
+          "unifi_verify_ssl": "Leave off: the console uses a self-signed certificate by default."
+        }
+      },
+      "door": {
+        "title": "Which gate?",
+        "description": "Pick the UniFi Access door that drives your gate.",
+        "data": {
+          "door": "Gate"
+        }
       }
     },
     "error": {
       "no_name": "Give the rule a name.",
       "no_days": "Pick at least one day.",
-      "no_action": "Pick at least one action: close automatically, open at start or close at end."
+      "no_action": "Pick at least one action: close automatically, open at start or close at end.",
+      "invalid_auth": "The API token was rejected. Check the token and its permissions.",
+      "cannot_connect": "UniFi Access cannot be reached at this address (port 12445).",
+      "no_doors": "No doors found in UniFi Access."
     }
   },
   "selector": {

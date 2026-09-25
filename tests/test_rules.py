@@ -47,3 +47,27 @@ def test_equal_times_mean_all_day():
 def test_describe():
     rule = {**WORKDAY, "auto_close": True, "auto_close_minutes": 15, "skip_when_home": True}
     assert rules.describe(rule) == "ma-vr 08:00-17:00: sluit na 15 min, niet als iemand thuis is"
+
+
+def test_normalize_rule():
+    r = rules.normalize_rule(
+        {"name": " Overdag ", "days": ["fri", "mon", "xx"], "start": "8:00", "end": "17:00",
+         "auto_close": True, "auto_close_minutes": "15"}, "abc")
+    assert r["id"] == "abc" and r["name"] == "Overdag"
+    assert r["days"] == ["mon", "fri"] and r["start"] == "08:00:00" and r["auto_close_minutes"] == 15
+
+
+def test_normalize_rule_rejects():
+    import pytest
+    base = {"name": "x", "days": ["mon"], "start": "08:00", "end": "17:00", "auto_close": True}
+    for bad in ({"name": ""}, {"days": []}, {"start": "25:00"}, {"auto_close": False},
+                {"auto_close_minutes": 0}):
+        with pytest.raises(ValueError):
+            rules.normalize_rule({**base, **bad}, "id")
+
+
+def test_normalize_settings():
+    s = rules.normalize_settings({"travel_time": "30", "retries": 1, "retry_delay": "5",
+                                  "presence_entities": ["person.dave"], "notify_service": " notify.x "})
+    assert s == {"travel_time": 30, "retries": 1, "retry_delay": 5.0, "presence_entities": ["person.dave"],
+                 "notify_service": "notify.x", "sensor_inverted": False}

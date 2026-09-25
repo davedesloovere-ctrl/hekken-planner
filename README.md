@@ -4,8 +4,12 @@ Home Assistant-integratie voor een hekken dat je enkel met een wisselpuls kunt s
 (zoals een UniFi Access-relais), met een aparte sensor die ziet of het open of dicht staat
 (zoals een Sensative strip).
 
-Je stelt alles in via de interface van Home Assistant: tijdsregels, automatisch sluiten na
-X minuten, en uitzonderingen als er iemand thuis is.
+Je beheert alles op een eigen pagina **Hekken** in de zijbalk van Home Assistant: de stand
+van het hekken met grote open- en dichtknoppen, een weekplanning, regels met automatisch
+sluiten na X minuten, uitzonderingen als er iemand thuis is, en de instellingen.
+
+Het hekken koppel je **rechtstreeks via de UniFi Access-API** of via een bestaande
+entiteit (knop, schakelaar, slot of script).
 
 ## Wat het doet
 
@@ -40,15 +44,20 @@ type *Integratie* → installeren → Home Assistant herstarten.
 
 Daarna: **Instellingen → Apparaten en diensten → Integratie toevoegen → Hekkenplanner.**
 
-Regels beheer je via **Hekkenplanner → Configureren**.
+Daarna verschijnt **Hekken** in de zijbalk. Daar beheer je de regels en instellingen.
+Het menu onder *Hekkenplanner → Configureren* blijft als reserve, en daar wijzig je ook de
+UniFi-verbinding.
 
 ## Wat je nodig hebt
 
-- Het relais als entiteit in Home Assistant: een knop, schakelaar, slot of script.
-  Voor UniFi Access is dat de deur van je hekken via een UniFi Access-integratie.
-  Zet de deur in UniFi Access op een korte ontgrendeling, niet op "blijvend open".
-- De Sensative strip als `binary_sensor` (Z-Wave). Standaard: aan = open.
-- Voor "iemand thuis": je personen (`person.*`) of `zone.home`.
+- **UniFi Access:** een API-token. Maak het aan in UniFi Access bij Instellingen → Algemeen →
+  Geavanceerd → API Token, met rechten om deuren te bekijken en te ontgrendelen. Home
+  Assistant moet je console op poort 12445 kunnen bereiken. Bij het koppelen kies je de
+  poort uit de lijst. Zet de deur in UniFi Access op een korte ontgrendeling, niet op
+  "blijvend open".
+- **Positiesensor:** de Sensative strip als `binary_sensor` (Z-Wave). Standaard: aan = open.
+- **Wie is thuis:** de personen in Home Assistant (`person.*`). Hun thuis- of weg-status komt
+  van de Home Assistant-app op je gsm. Je kan ook `zone.home` gebruiken.
 
 ## Entiteiten
 

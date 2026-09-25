@@ -2,8 +2,36 @@
   "config": {
     "step": {
       "user": {
-        "title": "Hekken koppelen",
-        "description": "Kies het relais dat het hekken een puls geeft en de sensor die ziet of het open of dicht staat. Na het koppelen staat er al een voorbeeldregel klaar: werkdagen 08:00-17:00, sluit na 15 minuten, niet als iemand thuis is.",
+        "title": "Hoe stuur je het hekken?",
+        "description": "Kies hoe Home Assistant de puls naar je hekken stuurt.",
+        "menu_options": {
+          "unifi": "Rechtstreeks via UniFi Access (API-token)",
+          "entity": "Via een bestaande entiteit (knop, schakelaar, slot of script)"
+        }
+      },
+      "unifi": {
+        "title": "UniFi Access koppelen",
+        "description": "Maak in UniFi Access een API-token aan (Instellingen → Algemeen → Geavanceerd → API Token) met rechten om deuren te bekijken en te ontgrendelen. De API draait op poort 12445 van je console.",
+        "data": {
+          "unifi_host": "Adres van je UniFi-console",
+          "unifi_token": "API-token",
+          "unifi_verify_ssl": "Certificaat controleren"
+        },
+        "data_description": {
+          "unifi_host": "Bijvoorbeeld 192.168.1.1. Poort 12445 wordt vanzelf toegevoegd.",
+          "unifi_verify_ssl": "Laat uit: de console gebruikt standaard een eigen certificaat."
+        }
+      },
+      "door": {
+        "title": "Welke poort?",
+        "description": "Kies de deur in UniFi Access die je hekken aanstuurt.",
+        "data": {
+          "door": "Poort"
+        }
+      },
+      "gate": {
+        "title": "Het hekken",
+        "description": "Kies de sensor die ziet of het hekken open of dicht staat. Na het koppelen staat er een voorbeeldregel klaar en vind je alles terug op de pagina Hekken in de zijbalk.",
         "data": {
           "name": "Naam",
           "relay_entity": "Relais (puls)",
@@ -29,6 +57,11 @@
     },
     "abort": {
       "already_configured": "Deze sensor hoort al bij een hekken."
+    },
+    "error": {
+      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
+      "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
+      "no_doors": "Geen deuren gevonden in UniFi Access."
     }
   },
   "options": {
@@ -40,7 +73,8 @@
           "add_rule": "Regel toevoegen",
           "edit_rule": "Regel bewerken",
           "delete_rule": "Regel verwijderen",
-          "settings": "Hekken en sensoren"
+          "settings": "Hekken en sensoren",
+          "unifi": "UniFi Access-verbinding"
         }
       },
       "edit_rule": {
@@ -92,12 +126,35 @@
           "retries": "Hoe vaak opnieuw pulsen voor het hekken in storing gaat. 1 betekent: één puls, na de wachttijd nog één, en dan storing.",
           "retry_delay": "Reageert het hekken niet op een puls, dan wacht de planner zo lang en kijkt intussen naar de sensor. Nog altijd niet goed na de laatste poging? Dan gaat het hekken in storing en wordt er niets meer gestuurd tot je de storing reset."
         }
+      },
+      "unifi": {
+        "title": "UniFi Access koppelen",
+        "description": "Maak in UniFi Access een API-token aan (Instellingen → Algemeen → Geavanceerd → API Token) met rechten om deuren te bekijken en te ontgrendelen. De API draait op poort 12445 van je console.",
+        "data": {
+          "unifi_host": "Adres van je UniFi-console",
+          "unifi_token": "API-token",
+          "unifi_verify_ssl": "Certificaat controleren"
+        },
+        "data_description": {
+          "unifi_host": "Bijvoorbeeld 192.168.1.1. Poort 12445 wordt vanzelf toegevoegd.",
+          "unifi_verify_ssl": "Laat uit: de console gebruikt standaard een eigen certificaat."
+        }
+      },
+      "door": {
+        "title": "Welke poort?",
+        "description": "Kies de deur in UniFi Access die je hekken aanstuurt.",
+        "data": {
+          "door": "Poort"
+        }
       }
     },
     "error": {
       "no_name": "Geef de regel een naam.",
       "no_days": "Kies minstens één dag.",
-      "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde."
+      "no_action": "Kies minstens één actie: automatisch sluiten, openen bij begin of sluiten bij einde.",
+      "invalid_auth": "Het API-token wordt geweigerd. Controleer het token en de rechten.",
+      "cannot_connect": "UniFi Access is niet bereikbaar op dit adres (poort 12445).",
+      "no_doors": "Geen deuren gevonden in UniFi Access."
     }
   },
   "selector": {

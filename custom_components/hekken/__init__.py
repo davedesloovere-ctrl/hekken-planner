@@ -5,7 +5,11 @@ from __future__ import annotations
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.typing import ConfigType
 
+from . import panel, websocket
+from .const import DOMAIN
 from .controller import GateController
 
 PLATFORMS = [
@@ -16,7 +20,15 @@ PLATFORMS = [
     Platform.SWITCH,
 ]
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 type HekkenConfigEntry = ConfigEntry[GateController]
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    websocket.async_register(hass)
+    await panel.async_register(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: HekkenConfigEntry) -> bool:
