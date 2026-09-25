@@ -103,8 +103,8 @@
           "auto_close": "Close automatically when open",
           "auto_close_minutes": "Close after",
           "skip_when_home": "Do not close when someone is home",
-          "open_at_start": "Open at the start of the window",
-          "close_at_end": "Close at the end of the window"
+          "start_action": "At the start of the window",
+          "end_action": "At the end of the window"
         },
         "data_description": {
           "auto_close": "When the gate opens within this window (app, badge or here), it closes by itself after the set time.",
@@ -171,6 +171,13 @@
         "fri": "Friday",
         "sat": "Saturday",
         "sun": "Sunday"
+      }
+    },
+    "action": {
+      "options": {
+        "none": "Do nothing",
+        "open": "Open the gate",
+        "close": "Close the gate"
       }
     }
   },

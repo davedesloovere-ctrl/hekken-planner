@@ -103,8 +103,8 @@
           "auto_close": "Automatisch sluiten als het open staat",
           "auto_close_minutes": "Sluiten na",
           "skip_when_home": "Niet sluiten als iemand thuis is",
-          "open_at_start": "Openen bij het begin van het venster",
-          "close_at_end": "Sluiten bij het einde van het venster"
+          "start_action": "Bij het begin van het venster",
+          "end_action": "Bij het einde van het venster"
         },
         "data_description": {
           "auto_close": "Gaat het hekken open binnen dit venster (via de app, badge of hier), dan sluit het vanzelf na de ingestelde tijd.",
@@ -171,6 +171,13 @@
         "fri": "Vrijdag",
         "sat": "Zaterdag",
         "sun": "Zondag"
+      }
+    },
+    "action": {
+      "options": {
+        "none": "Niets doen",
+        "open": "Poort openen",
+        "close": "Poort sluiten"
       }
     }
   },

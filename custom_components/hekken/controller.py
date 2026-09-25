@@ -43,14 +43,12 @@ from .const import (
     MAX_PULSES_WINDOW,
     R_AUTO_CLOSE,
     R_AUTO_CLOSE_MIN,
-    R_CLOSE_AT_END,
     R_ID,
     R_NAME,
-    R_OPEN_AT_START,
     R_SKIP_HOME,
     RELAY_UNIFI,
 )
-from .rules import rule_active
+from .rules import end_action, rule_active, start_action
 from .unifi_access import UnifiAccessClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -212,23 +210,24 @@ class GateController:
 
         if self.auto_enabled:
             by_id = {r[R_ID]: r for r in self.rules}
-            # Eerst de eindes, dan de starts: loopt een sluitregel om 17u af en
-            # opent een andere om 17u, dan wint het openen.
+            # Eerst de eindes, dan de starts: eindigt de ene regel om 17u en
+            # begint een andere om 17u, dan wint de regel die begint.
             for rule_id in ended:
-                rule = by_id[rule_id]
-                if not self.rule_enabled.get(rule_id, True) or not rule.get(R_CLOSE_AT_END):
-                    continue
-                if rule.get(R_SKIP_HOME) and self.anyone_home():
-                    self._set_last_action(f"{rule[R_NAME]}: niet gesloten, iemand thuis")
-                    continue
-                self.request(False, f"{rule[R_NAME]}: einde venster")
+                self._rule_action(by_id[rule_id], end_action(by_id[rule_id]), "einde venster")
             for rule_id in started:
-                rule = by_id[rule_id]
-                if self.rule_enabled.get(rule_id, True) and rule.get(R_OPEN_AT_START):
-                    self.request(True, f"{rule[R_NAME]}: begin venster")
+                self._rule_action(by_id[rule_id], start_action(by_id[rule_id]), "begin venster")
 
         self._update_auto_close()
         self._notify_listeners()
+
+    @callback
+    def _rule_action(self, rule: dict, action: str, moment: str) -> None:
+        if action == "none" or not self.rule_enabled.get(rule[R_ID], True):
+            return
+        if action == "close" and rule.get(R_SKIP_HOME) and self.anyone_home():
+            self._set_last_action(f"{rule[R_NAME]}: niet gesloten ({moment}), iemand thuis")
+            return
+        self.request(action == "open", f"{rule[R_NAME]}: {moment}")
 
     # --- automatisch sluiten --------------------------------------------
 

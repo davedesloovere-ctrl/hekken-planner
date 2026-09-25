@@ -1,7 +1,7 @@
 // Hekkenplanner: de pagina in de zijbalk van Home Assistant.
 // Geen build-stap, geen externe bibliotheken; gedeelde stukken in hekken-common.js.
 
-import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, hhmm, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.6";
+import { COLORS, DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, endAction, esc, gateView, hhmm, startAction, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.7";
 
 const CSS = `
 :host {
@@ -98,9 +98,13 @@ input:focus, select:focus { outline: 2px solid color-mix(in srgb, var(--hk-accen
 .presets button { font: inherit; font-size: 12px; background: none; border: 0; color: var(--hk-accent); cursor: pointer; padding: 2px 4px; }
 .opt { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--hk-line); }
 .opt .t { font-weight: 600; font-size: 14px; }
-.opt .d { font-size: 12px; color: var(--hk-muted); grid-column: 1; }
+.opt .d { font-size: 12px; color: var(--hk-muted); grid-column: 1 / -1; }
 .opt .extra { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .opt .extra input { width: 90px; }
+.seg { display: inline-flex; border: 1px solid var(--hk-line); border-radius: 10px; overflow: hidden; }
+.seg button { font: inherit; font-size: 13px; padding: 7px 12px; border: 0; background: transparent; color: var(--hk-muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--hk-line); }
+.seg button.on { background: var(--hk-accent); color: var(--text-primary-color, #fff); }
 .stepper { display: inline-flex; align-items: center; gap: 4px; }
 .stepper button { font: inherit; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--hk-line); background: var(--hk-card); color: var(--hk-text); cursor: pointer; }
 .stepper input { width: 70px !important; text-align: center; }
@@ -436,8 +440,8 @@ class HekkenPanel extends HTMLElement {
       const tags = [];
       if (r.auto_close) tags.push(this.t("sum_auto", { m: r.auto_close_minutes }));
       if (r.skip_when_home) tags.push(this.t("sum_home"));
-      if (r.open_at_start) tags.push(this.t("sum_open"));
-      if (r.close_at_end) tags.push(this.t("sum_close"));
+      if (startAction(r) !== "none") tags.push(this.t(`sum_start_${startAction(r)}`));
+      if (endAction(r) !== "none") tags.push(this.t(`sum_end_${endAction(r)}`));
       return `
         <div class="rule ${on ? "" : "disabled"}" data-id="${esc(r.id)}">
           <div class="stripe" style="background:${COLORS[i % COLORS.length]}"></div>
@@ -464,9 +468,9 @@ class HekkenPanel extends HTMLElement {
 
   _openDialog(rule) {
     const draft = rule
-      ? JSON.parse(JSON.stringify(rule))
+      ? { ...JSON.parse(JSON.stringify(rule)), start_action: startAction(rule), end_action: endAction(rule) }
       : { name: "", days: DAYS.slice(0, 5), start: "08:00:00", end: "17:00:00", auto_close: true,
-          auto_close_minutes: 15, skip_when_home: true, open_at_start: false, close_at_end: false };
+          auto_close_minutes: 15, skip_when_home: true, start_action: "none", end_action: "none" };
     const isNew = !rule;
     const overlay = document.createElement("div");
     overlay.className = "overlay";
@@ -478,6 +482,14 @@ class HekkenPanel extends HTMLElement {
         <label class="sw"><input type="checkbox" data-k="${key}" ${draft[key] ? "checked" : ""}><span></span></label>
         <div class="d">${desc}</div>
         ${extra}
+      </div>`;
+
+    const seg = (key, title, desc) => `
+      <div class="opt">
+        <div class="t">${title}</div>
+        <div class="seg">${["none", "open", "close"].map((a) =>
+          `<button type="button" data-seg="${key}" data-v="${a}" class="${draft[key] === a ? "on" : ""}">${this.t("act_" + a)}</button>`).join("")}</div>
+        <div class="d">${desc}</div>
       </div>`;
 
     const render = () => {
@@ -507,8 +519,8 @@ class HekkenPanel extends HTMLElement {
               <span class="stepper"><button type="button" data-step="-5">−</button><input type="number" data-f="auto_close_minutes" min="1" max="240" value="${draft.auto_close_minutes}"><button type="button" data-step="5">+</button></span>
               ${this.t("minutes")}</div>` : "")}
           ${opt("skip_when_home", this.t("act_skip_home"), this.t("act_skip_home_d"))}
-          ${opt("open_at_start", this.t("act_open_start"), this.t("act_open_start_d"))}
-          ${opt("close_at_end", this.t("act_close_end"), this.t("act_close_end_d"))}
+          ${seg("start_action", this.t("at_start"), this.t("at_start_d"))}
+          ${seg("end_action", this.t("at_end"), this.t("at_end_d"))}
           <div class="err"></div>
           <div class="foot">
             ${isNew ? "" : `<button class="btn ghost" data-del style="color:var(--hk-bad)">${svg("del")}${this.t("delete")}</button>`}
@@ -540,6 +552,11 @@ class HekkenPanel extends HTMLElement {
         }));
       overlay.querySelectorAll("[data-k]").forEach((el) =>
         el.addEventListener("change", () => { draft[el.dataset.k] = el.checked; if (el.dataset.k === "auto_close") render(); }));
+      overlay.querySelectorAll("[data-seg]").forEach((b) =>
+        b.addEventListener("click", () => {
+          draft[b.dataset.seg] = b.dataset.v;
+          overlay.querySelectorAll(`[data-seg="${b.dataset.seg}"]`).forEach((x) => x.classList.toggle("on", x === b));
+        }));
       overlay.querySelectorAll("[data-step]").forEach((b) =>
         b.addEventListener("click", () => {
           draft.auto_close_minutes = Math.min(240, Math.max(1, Number(draft.auto_close_minutes || 0) + Number(b.dataset.step)));
@@ -555,7 +572,7 @@ class HekkenPanel extends HTMLElement {
         draft.name = draft.name.trim();
         if (!draft.name) return (err.textContent = this.t("err_name"));
         if (!draft.days.length) return (err.textContent = this.t("err_days"));
-        if (!draft.auto_close && !draft.open_at_start && !draft.close_at_end) return (err.textContent = this.t("err_action"));
+        if (!draft.auto_close && draft.start_action === "none" && draft.end_action === "none") return (err.textContent = this.t("err_action"));
         const rules = isNew ? [...this.entry.rules, draft] : this.entry.rules.map((r) => (r.id === rule.id ? draft : r));
         if (await this._saveRules(rules)) close();
       });

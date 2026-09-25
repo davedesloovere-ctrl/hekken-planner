@@ -28,8 +28,8 @@ entiteit (knop, schakelaar, slot of script).
 - **Regels** met dagen en een tijdsvenster. Per regel kies je:
   - automatisch sluiten na X minuten open,
   - niet sluiten als iemand thuis is,
-  - openen bij het begin van het venster,
-  - sluiten bij het einde van het venster.
+  - bij het begin van het venster: niets, openen of sluiten,
+  - bij het einde van het venster: niets, openen of sluiten.
 - **Schakelaars** om alles of één regel tijdelijk uit te zetten, bv. voor een feestje.
 
 Voorbeeld: *werkdagen 08:00-17:00, sluit na 15 minuten, niet als iemand thuis is.*

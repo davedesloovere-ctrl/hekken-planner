@@ -1,7 +1,7 @@
 // Hekken-kaart voor dashboards. De integratie laadt dit bestand zelf in;
 // de kaart haalt hekken, entiteiten en aanwezigheid uit de Hekkenplanner.
 
-import { DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.6";
+import { DAYS, GATE_SVG, SHARED_CSS, TOKENS_CSS, esc, gateView, subText, svg, toMin, tr } from "./hekken-common.js?v=0.2.7";
 
 const CSS = `
 :host { ${TOKENS_CSS} display: block; }

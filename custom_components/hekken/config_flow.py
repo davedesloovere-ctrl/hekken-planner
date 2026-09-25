@@ -56,19 +56,20 @@ from .const import (
     PRESENCE_DOMAINS,
     R_AUTO_CLOSE,
     R_AUTO_CLOSE_MIN,
-    R_CLOSE_AT_END,
     R_DAYS,
+    R_END_ACTION,
     R_END,
     R_ID,
     R_NAME,
-    R_OPEN_AT_START,
     R_SKIP_HOME,
     R_START,
+    R_START_ACTION,
     RELAY_DOMAINS,
     RELAY_ENTITY,
     RELAY_UNIFI,
+    ACTIONS,
 )
-from .rules import describe
+from .rules import describe, end_action, normalize_rule, start_action
 from .unifi_access import (
     UnifiAccessAuthError,
     UnifiAccessCertError,
@@ -183,8 +184,12 @@ def _rule_schema(r: dict[str, Any]) -> vol.Schema:
                 NumberSelectorConfig(min=1, max=240, step=1, unit_of_measurement="min", mode=NumberSelectorMode.BOX)
             ),
             vol.Required(R_SKIP_HOME, default=r.get(R_SKIP_HOME, True)): BooleanSelector(),
-            vol.Required(R_OPEN_AT_START, default=r.get(R_OPEN_AT_START, False)): BooleanSelector(),
-            vol.Required(R_CLOSE_AT_END, default=r.get(R_CLOSE_AT_END, False)): BooleanSelector(),
+            vol.Required(R_START_ACTION, default=start_action(r)): SelectSelector(
+                SelectSelectorConfig(options=ACTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="action")
+            ),
+            vol.Required(R_END_ACTION, default=end_action(r)): SelectSelector(
+                SelectSelectorConfig(options=ACTIONS, mode=SelectSelectorMode.DROPDOWN, translation_key="action")
+            ),
         }
     )
 
@@ -195,7 +200,7 @@ def _validate_rule(user_input: dict[str, Any]) -> dict[str, str]:
         errors[R_NAME] = "no_name"
     if not user_input[R_DAYS]:
         errors[R_DAYS] = "no_days"
-    if not (user_input[R_AUTO_CLOSE] or user_input[R_OPEN_AT_START] or user_input[R_CLOSE_AT_END]):
+    if not (user_input[R_AUTO_CLOSE] or user_input[R_START_ACTION] != "none" or user_input[R_END_ACTION] != "none"):
         errors["base"] = "no_action"
     return errors
 
@@ -210,8 +215,8 @@ def _example_rule() -> dict[str, Any]:
         R_AUTO_CLOSE: True,
         R_AUTO_CLOSE_MIN: 15,
         R_SKIP_HOME: True,
-        R_OPEN_AT_START: False,
-        R_CLOSE_AT_END: False,
+        R_START_ACTION: "none",
+        R_END_ACTION: "none",
     }
 
 
@@ -331,13 +336,7 @@ class HekkenOptionsFlow(OptionsFlow):
         if user_input is not None:
             errors = _validate_rule(user_input)
             if not errors:
-                rule = {
-                    **user_input,
-                    R_ID: self._rule_id or uuid4().hex,
-                    R_NAME: user_input[R_NAME].strip(),
-                    R_DAYS: [d for d in DAYS if d in user_input[R_DAYS]],
-                    R_AUTO_CLOSE_MIN: int(user_input[R_AUTO_CLOSE_MIN]),
-                }
+                rule = normalize_rule({**user_input, R_ID: self._rule_id}, uuid4().hex)
                 if self._rule_id:
                     rules = [rule if r[R_ID] == self._rule_id else r for r in rules]
                 else:

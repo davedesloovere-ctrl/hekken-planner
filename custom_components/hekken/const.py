@@ -3,7 +3,7 @@
 from .rules import DAYS  # noqa: F401
 
 DOMAIN = "hekken"
-VERSION = "0.2.6"
+VERSION = "0.2.7"
 
 CONF_RELAY_TYPE = "relay_type"
 RELAY_UNIFI = "unifi"
@@ -29,8 +29,9 @@ R_NAME = "name"
 R_DAYS = "days"
 R_START = "start"
 R_END = "end"
-R_OPEN_AT_START = "open_at_start"
-R_CLOSE_AT_END = "close_at_end"
+R_START_ACTION = "start_action"
+R_END_ACTION = "end_action"
+ACTIONS = ["none", "open", "close"]
 R_AUTO_CLOSE = "auto_close"
 R_AUTO_CLOSE_MIN = "auto_close_minutes"
 R_SKIP_HOME = "skip_when_home"

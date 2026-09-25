@@ -29,8 +29,9 @@ export const STR = {
     act_auto_close: "Automatisch sluiten", act_auto_close_d: "Gaat het hekken open in dit venster, dan sluit het vanzelf.",
     after: "na", minutes: "min",
     act_skip_home: "Niet sluiten als iemand thuis is", act_skip_home_d: "Vertrekt de laatste persoon, dan begint de teller opnieuw.",
-    act_open_start: "Openen bij het begin", act_open_start_d: "Het hekken gaat open op het beginuur.",
-    act_close_end: "Sluiten bij het einde", act_close_end_d: "Het hekken gaat dicht op het einduur.",
+    at_start: "Bij het begin", at_end: "Bij het einde",
+    act_none: "Niets", act_open: "Openen", act_close: "Sluiten",
+    at_start_d: "Wat de poort doet op het beginuur.", at_end_d: "Wat de poort doet op het einduur.",
     overnight: "Loopt over middernacht tot de volgende dag.",
     allday: "Gelijke uren: de hele dag.",
     err_name: "Geef de regel een naam.", err_days: "Kies minstens één dag.", err_action: "Kies minstens één actie.",
@@ -42,7 +43,7 @@ export const STR = {
     inverted: "Sensor omgekeerd", inverted_d: "Aanzetten als de sensor 'aan' geeft wanneer het hekken dicht is.",
     sec: "s", read_only: "Enkel beheerders kunnen regels en instellingen wijzigen.",
     d_mon: "Ma", d_tue: "Di", d_wed: "Wo", d_thu: "Do", d_fri: "Vr", d_sat: "Za", d_sun: "Zo",
-    sum_auto: "sluit na {m} min", sum_home: "niet als iemand thuis is", sum_open: "open bij begin", sum_close: "dicht bij einde",
+    sum_auto: "sluit na {m} min", sum_home: "niet als iemand thuis is", sum_start_open: "open bij begin", sum_start_close: "dicht bij begin", sum_end_open: "open bij einde", sum_end_close: "dicht bij einde",
     now: "nu",
     pos_open: "Poort staat open", pos_closed: "Poort staat dicht", pos_unknown: "Stand onbekend",
     today: "Vandaag", card_today: "Tijdlijn van vandaag tonen", card_last: "Laatste actie tonen",
@@ -73,8 +74,9 @@ export const STR = {
     act_auto_close: "Close automatically", act_auto_close_d: "When the gate opens within this window, it closes by itself.",
     after: "after", minutes: "min",
     act_skip_home: "Don't close when someone is home", act_skip_home_d: "When the last person leaves, the timer starts again.",
-    act_open_start: "Open at the start", act_open_start_d: "The gate opens at the start time.",
-    act_close_end: "Close at the end", act_close_end_d: "The gate closes at the end time.",
+    at_start: "At the start", at_end: "At the end",
+    act_none: "Nothing", act_open: "Open", act_close: "Close",
+    at_start_d: "What the gate does at the start time.", at_end_d: "What the gate does at the end time.",
     overnight: "Runs past midnight into the next day.",
     allday: "Equal times: all day.",
     err_name: "Give the rule a name.", err_days: "Pick at least one day.", err_action: "Pick at least one action.",
@@ -86,7 +88,7 @@ export const STR = {
     inverted: "Sensor inverted", inverted_d: "Turn on if the sensor reports 'on' when the gate is closed.",
     sec: "s", read_only: "Only administrators can change rules and settings.",
     d_mon: "Mo", d_tue: "Tu", d_wed: "We", d_thu: "Th", d_fri: "Fr", d_sat: "Sa", d_sun: "Su",
-    sum_auto: "closes after {m} min", sum_home: "not when someone is home", sum_open: "opens at start", sum_close: "closes at end",
+    sum_auto: "closes after {m} min", sum_home: "not when someone is home", sum_start_open: "opens at start", sum_start_close: "closes at start", sum_end_open: "opens at end", sum_end_close: "closes at end",
     now: "now",
     pos_open: "Gate is open", pos_closed: "Gate is closed", pos_unknown: "Position unknown",
     today: "Today", card_today: "Show today's timeline", card_last: "Show last action",
@@ -290,3 +292,7 @@ export function subText(hass, view) {
   if (view.inFault) return tr(hass, `pos_${["open", "closed"].includes(view.pos) ? view.pos : "unknown"}`);
   return view.closeAt ? tr(hass, "closes_in", { t: countdown(view.closeAt) }) : "";
 }
+
+// Oude regels kenden enkel open_at_start en close_at_end.
+export const startAction = (r) => (["none", "open", "close"].includes(r.start_action) ? r.start_action : r.open_at_start ? "open" : "none");
+export const endAction = (r) => (["none", "open", "close"].includes(r.end_action) ? r.end_action : r.close_at_end ? "close" : "none");

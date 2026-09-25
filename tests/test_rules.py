@@ -83,3 +83,22 @@ def test_frontend_imports_current_version():
     for name in ("hekken-panel.js", "hekken-card.js"):
         js = (base / "frontend" / name).read_text(encoding="utf-8")
         assert re.findall(r'hekken-common\.js\?v=([\d.]+)"', js) == [version], name
+
+
+def test_start_end_actions_and_legacy():
+    old = {"open_at_start": True, "close_at_end": True}
+    assert rules.start_action(old) == "open" and rules.end_action(old) == "close"
+    assert rules.start_action({}) == "none" and rules.end_action({}) == "none"
+    new = {"start_action": "close", "end_action": "open"}
+    assert rules.start_action(new) == "close" and rules.end_action(new) == "open"
+    base = {"name": "Avond", "days": ["mon"], "start": "22:00", "end": "07:00"}
+    r = rules.normalize_rule({**base, "start_action": "close"}, "id")
+    assert r["start_action"] == "close" and r["end_action"] == "none" and "open_at_start" not in r
+    r = rules.normalize_rule({**base, "open_at_start": True}, "id")  # oude regel wordt omgezet
+    assert r["start_action"] == "open"
+    import pytest
+    with pytest.raises(ValueError):
+        rules.normalize_rule({**base, "start_action": "ontploffen"}, "id")
+    with pytest.raises(ValueError):
+        rules.normalize_rule({**base, "start_action": "none", "end_action": "none"}, "id")
+    assert rules.describe({**base, "start_action": "close", "end_action": "open"}) == "ma 22:00-07:00: dicht bij start, open bij einde"
